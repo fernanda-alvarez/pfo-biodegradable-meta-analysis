@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code, data, or results, please cite it as below."
+title: "Efficacy and Safety of Biodegradable versus Metallic Occluders for Patent Foramen Ovale Closure: A Systematic Review and Meta-Analysis"
+version: 1.0.0
+date-released: 2026-10-18
+url: "https://github.com/fernanda-alvarez/pfo-biodegradable-meta-analysis"
+authors:
+  - family-names: "Taslim"
+    given-names: "Fitranda"
+    affiliation: "Department of Cardiology and Vascular Medicine, Faculty of Medicine, Universitas Jember / dr. Soebandi Regional Hospital, Jember, Indonesia"
+keywords:
+  - "Patent Foramen Ovale"
+  - "Biodegradable Occluder"
+  - "Meta-Analysis"
+  - "Systematic Review"
+  - "Interventional Cardiology"
+  - "Stroke Prevention"
+license: MIT

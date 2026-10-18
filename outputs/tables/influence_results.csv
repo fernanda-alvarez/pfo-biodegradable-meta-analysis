@@ -1,0 +1,39 @@
+"model_id","study_id","rstudent","dffits","cook_d","tau2_del"
+"ecl6_core","Li 2026",0.074,0.041,0.003,0
+"ecl6_core","Zhang 2026",-1.751,-1.781,1.561,0
+"ecl6_core","Cernic Suligoj 2020",2.331,1.381,0.592,0
+"strict_early","Darsaklis 2014",0.868,0.45,0.24,0
+"strict_early","Karagianni 2011",0.635,0.307,0.129,0.00277
+"strict_early","Cernic Suligoj 2020",-8.734,-10.362,2.64,0
+"cve_late_core","Karagianni 2011",-0.982,-1.047,1.116,0
+"cve_late_core","Darsaklis 2014",-0.266,-0.127,0.03,0
+"cve_late_core","Cernic Suligoj 2020",22.674,14.219,0.785,0
+"cve_late_with_luani","Karagianni 2011",0.508,0.351,0.187,0.51165
+"cve_late_with_luani","Darsaklis 2014",0.31,0.148,0.029,0.39044
+"cve_late_with_luani","Cernic Suligoj 2020",0.723,0.401,0.186,0.32335
+"cve_late_with_luani","Luani 2015",-9.511,-5.585,1.012,0
+"af_late_with_luani","Li 2026",-1.681,-0.63,0.208,0
+"af_late_with_luani","Li 2025",-0.116,0.066,0.01,0.54936
+"af_late_with_luani","Luani 2015",1.352,1.397,1.379,0
+"af_late_full","Li 2026",-4.073,-2.17,0.535,0
+"af_late_full","Zhang 2026",-0.032,-0.012,0,0
+"af_late_full","Li 2025",1.733,2.348,2.756,0
+"af_late_full_with_luani","Li 2026",-1.953,-0.703,0.255,0
+"af_late_full_with_luani","Zhang 2026",-0.335,-0.091,0.012,0
+"af_late_full_with_luani","Li 2025",-0.248,-0.14,0.029,0.05766
+"af_late_full_with_luani","Luani 2015",1.992,1.917,1.847,0
+"af_any_late","Li 2026",-1.085,-0.477,0.215,0
+"af_any_late","Zhang 2026",-0.253,-0.179,0.047,0
+"af_any_late","Karagianni 2011",-0.62,-0.242,0.073,0
+"af_any_late","Li 2025",3.25,2.497,1.489,0
+"af_any_late_with_darsaklis","Li 2026",-1.395,-0.526,0.224,0
+"af_any_late_with_darsaklis","Zhang 2026",-0.52,-0.306,0.115,0
+"af_any_late_with_darsaklis","Karagianni 2011",-0.838,-0.281,0.085,0
+"af_any_late_with_darsaklis","Li 2025",1.417,0.896,0.641,0
+"af_any_late_with_darsaklis","Darsaklis 2014",0.807,0.442,0.214,0
+"ecl6_expanded_early","Darsaklis 2014",1.393,1.085,0.88,0
+"ecl6_expanded_early","Karagianni 2011",0.387,0.124,0.023,0.00651
+"ecl6_expanded_early","Cernic Suligoj 2020",-10.389,-11.465,2.058,0
+"ecl12_gen_with_luani","Karagianni 2011",21.627,4.505,0.087,0
+"ecl12_gen_with_luani","Li 2026",-0.394,-1.033,4.092,0.00881
+"ecl12_gen_with_luani","Luani 2015",-0.521,-0.695,5.21,0.00736

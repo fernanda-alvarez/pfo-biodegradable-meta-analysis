@@ -1,0 +1,22 @@
+{
+  "formats": ["png", "pdf"],
+  "width_in": 8.5,
+  "height_mode": "auto",
+  "height_in": 6.0,
+  "dpi": 300,
+  "layout_preset": "reference",
+  "whitespace_mode": "ultra-compact",
+  "proportion_axis_mode": "auto",
+  "ecl6_axis_mode": "focused",
+  "background": "#FFFFFF",
+  "border": "#000000",
+  "line": "#263238",
+  "accent": "#000000",
+  "show_weights": true,
+  "show_heterogeneity": true,
+  "show_model": true,
+  "show_direction_labels": true,
+  "extreme_ci_mode": "clip",
+  "output_dir": "outputs/figures",
+  "report": true
+}

@@ -1,0 +1,3 @@
+"model_id","label","q_between","df","p","included","note"
+"ecl12_population","population stratum (general vs migraine), 12-month effective closure",0.492,1,0.4832,"Karagianni 2011; Li 2026; Sun 2025; Li 2025","Q-between from random-effects moderator model; exploratory, small k"
+"ecl6_design","design (randomized vs observational), 6-month effective closure",0.369,1,0.5438,"Zhang 2026; Li 2026; Cernic Suligoj 2020","Q-between from random-effects moderator model; exploratory, small k"

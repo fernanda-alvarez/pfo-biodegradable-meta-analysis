@@ -1,0 +1,4 @@
+"model_id","step","added_study","year","k","rr","ci_low","ci_high"
+"ecl6_core",1,"Cernic Suligoj 2020",2020,1,1.046,0.923,1.185
+"ecl6_core",2,"Li 2026",2026,2,1.03,0.84,1.263
+"ecl6_core",3,"Zhang 2026",2026,3,1.01,0.943,1.082

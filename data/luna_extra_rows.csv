@@ -1,0 +1,3 @@
+row_id,study_id,tax,window,population_stratum,ei,ni,ec,nc,data_status,comments
+DERIVED:LI2026-ANY-12,Li 2026,arrhythmia_any,late,general,1,44,5,88,derived,"Any atrial arrhythmia (AF + SVT) at follow-up: AF 0/44 vs 2/88 + SVT 1/44 vs 3/88 summed (assumed mutually exclusive); verified against Table 2 word-level extraction of the source PDF (v4 tidy row C8:38 recorded 1/44 vs 3/88, comparator SVT count only, and is superseded)."
+DERIVED:DARSAKLIS-ANY,Darsaklis 2014,arrhythmia_any,late,general,2,32,6,135,conditional,"Any atrial arrhythmia, comparator arms combined once (GSO 1/47 + HELEX 2/25 + APO 3/63 = 6/135); unequal follow-up between arms; overall rate 8/193 (4.7%)."

@@ -1,0 +1,3154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple Offline Robvis — RoB 2 &amp; ROBINS-I v2</title>
+<style>
+  :root{
+    --border:#c9ccd1; --bg:#f6f7f9; --accent:#1f6fb2; --text:#1f2328;
+    --muted:#656d76; --warn:#9a6700; --err:#cf222e; --ok:#1a7f37;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg);}
+  header{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  header h1{margin:0;font-size:20px;}
+  header .sub{color:var(--muted);font-size:13px;}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 57px);}
+  aside{background:#fff;border-right:1px solid var(--border);padding:16px;overflow:auto;}
+  .pane-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+  .pane-nav button{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:5px;padding:7px 3px;font:inherit;font-size:11px;font-weight:600;cursor:pointer;}
+  .pane-nav button:hover{background:#f0f3f6;color:var(--text);}
+  .pane-nav button.active{background:#e8f2fb;border-color:#9ec7e8;color:#135b91;}
+  aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px;}
+  aside h2:first-child{margin-top:0;}
+  select,input[type=text],textarea{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font:inherit;background:#fff;}
+  textarea{height:130px;font-family:Consolas,Menlo,monospace;font-size:12px;resize:vertical;}
+  label.row{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;}
+  label.row input[type=checkbox]{width:auto;accent-color:var(--accent);}
+  .btn{display:inline-block;border:1px solid var(--border);background:#fff;color:var(--text);
+    padding:6px 12px;border-radius:5px;font:inherit;font-size:13px;cursor:pointer;margin:3px 3px 0 0;}
+  .btn:hover{background:#f0f3f6;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:#195d93;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,.tabs button:focus-visible{outline:3px solid #8ec5f2;outline-offset:2px;}
+  main{padding:16px 20px;overflow:auto;}
+  #status{margin-bottom:10px;font-size:13px;}
+  #status .info{color:var(--muted);}
+  #status .warn{color:var(--warn);}
+  #status .err{color:var(--err);}
+  #status .ok{color:var(--ok);}
+  #status ul{margin:4px 0 0;padding-left:20px;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;}
+  .toolbar input[type=text]{width:210px;}
+  .toolbar select{width:auto;}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  .tabs button{border:1px solid var(--border);border-bottom:none;background:#fff;padding:8px 18px;
+    border-radius:6px 6px 0 0;font:inherit;font-size:14px;cursor:pointer;color:var(--muted);}
+  .tabs button.active{background:var(--bg);border-bottom:1px solid var(--bg);color:var(--text);font-weight:600;position:relative;top:1px;}
+  .tab{display:none;}
+  .tab.active{display:block;}
+  .figtools{margin-bottom:10px;}
+  .figure{background:#fff;border:1px solid var(--border);border-radius:6px;padding:12px;overflow:auto;display:inline-block;max-width:100%;}
+  .placeholder{color:var(--muted);font-size:14px;padding:40px 20px;text-align:center;border:1px dashed var(--border);border-radius:6px;background:#fff;}
+  .tablewrap{background:#fff;border:1px solid var(--border);border-radius:6px;overflow:auto;max-height:70vh;}
+  table#grid{border-collapse:collapse;font-size:13px;}
+  table#grid th,table#grid td{border:1px solid var(--border);padding:4px 6px;white-space:nowrap;}
+  table#grid th{background:#f0f3f6;position:sticky;top:0;font-weight:600;z-index:2;}
+  table#grid td input[type=text]{width:150px;padding:4px 6px;}
+  table#grid td select{padding:4px 6px;width:128px;}
+  table#grid td input[type=number]{width:60px;padding:4px 6px;}
+  table#grid .del{color:var(--err);background:none;border:none;cursor:pointer;font-size:14px;}
+  table#grid tr.dragging{opacity:.5;}
+  table#grid tr.drag-over td{border-top:2px solid var(--accent);}
+  tr.group-row td{background:#eef1f4;font-weight:600;cursor:pointer;}
+  tr.group-row .gcount{font-weight:400;color:var(--muted);margin-left:8px;}
+  .reset{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:var(--accent);}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45;}
+  .aside-actions{margin-top:10px;}
+  .cols-group{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text);}
+  .cols-group label{display:flex;align-items:center;gap:4px;}
+  .cols-group input{width:auto;accent-color:var(--accent);}
+  #bulkbar{display:none;align-items:center;gap:8px;background:#fff8e6;border:1px solid #e5c77a;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:13px;}
+  #bulkbar.visible{display:flex;}
+  #bulkbar select{width:auto;padding:3px 6px;}
+  #bulkbar .btn{padding:3px 10px;}
+  .modal{position:fixed;inset:0;background:rgba(31,35,40,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:100;}
+  .modal.visible{display:flex;}
+  .modal-box{background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.25);width:100%;max-width:980px;max-height:90vh;display:flex;flex-direction:column;}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .modal-head h3{margin:0;font-size:15px;}
+  .modal-head button{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);}
+  .modal-body{padding:14px 16px;overflow:auto;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:6px;padding:12px 16px;border-top:1px solid var(--border);}
+  table#wizMap{border-collapse:collapse;font-size:13px;margin-bottom:12px;}
+  table#wizMap th,table#wizMap td{border:1px solid var(--border);padding:5px 8px;}
+  table#wizMap th{background:#f0f3f6;text-align:left;}
+  table#wizMap select{width:220px;padding:4px 6px;}
+  table#wizPrev{border-collapse:collapse;font-size:12px;}
+  table#wizPrev th,table#wizPrev td{border:1px solid var(--border);padding:3px 6px;white-space:nowrap;}
+  table#wizPrev th{background:#f0f3f6;position:sticky;top:0;}
+  .wiz-issue{color:var(--err);}
+  .wiz-issue select{width:150px;padding:2px 4px;color:var(--text);}
+  .toasts{position:fixed;bottom:18px;right:18px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:420px;}
+  .toast{background:#1f2328;color:#fff;padding:10px 14px;border-radius:6px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);transition:all .2s;}
+  .toast.show{opacity:1;transform:none;}
+  .toast.ok{border-left:4px solid var(--ok);}
+  .toast.warn{border-left:4px solid var(--warn);}
+  .toast.err{border-left:4px solid var(--err);}
+  table#grid th.sticky,table#grid td.sticky{position:sticky;left:0;z-index:4;}
+  table#grid th.sticky2,table#grid td.sticky2{position:sticky;left:37px;z-index:3;}
+  table#grid th.sticky,table#grid th.sticky2{background:#f0f3f6;}
+  table#grid td.sticky,table#grid td.sticky2{background:#fff;}
+  table#grid tbody tr:nth-child(even):not(.group-row) td{background:#f8f9fa;}
+  table#grid tbody tr:nth-child(even):not(.group-row) td.sticky,table#grid tbody tr:nth-child(even):not(.group-row) td.sticky2{background:#f8f9fa;}
+  table#grid tbody tr:not(.group-row):hover td{background:#eef4fb;}
+  table#grid tbody tr:not(.group-row):hover td.sticky,table#grid tbody tr:not(.group-row):hover td.sticky2{background:#eef4fb;}
+  tr.group-row td.sticky,tr.group-row td.sticky2{background:#eef1f4;}
+  #addN{width:64px;padding:4px 6px;}
+  #dropOverlay{position:fixed;inset:0;background:rgba(31,101,178,.15);border:3px dashed var(--accent);display:none;align-items:center;justify-content:center;z-index:300;pointer-events:none;}
+  #dropOverlay.visible{display:flex;}
+  #dropOverlay span{background:#fff;border:1px solid var(--border);border-radius:8px;padding:18px 26px;font-size:15px;color:var(--accent);font-weight:600;}
+  #colorPickers{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px;}
+  #colorPickers label{display:flex;align-items:center;gap:6px;}
+  #colorPickers input[type=color]{width:42px;height:22px;padding:0;border:1px solid var(--border);border-radius:4px;background:#fff;}
+  #colorPickers .btn{grid-column:1 / -1;margin-top:6px;}
+  .drop-zone{font-size:12px;color:var(--muted);}
+  .settings-section{border-bottom:1px solid #e4e7eb;padding:0 0 10px;margin-bottom:10px;}
+  .settings-section summary{list-style:none;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:8px 0;}
+  .settings-section summary::-webkit-details-marker{display:none;}
+  .settings-section summary::before{content:"▸";display:inline-block;width:18px;color:var(--accent);}
+  .settings-section[open] summary::before{content:"▾";}
+  .settings-section > :not(summary){margin-left:0;}
+  .summary-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:0 0 12px;}
+  .summary-card .metric{background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 10px;}
+  .summary-card .metric strong{display:block;font-size:18px;}
+  .summary-card .metric span{font-size:11px;color:var(--muted);}
+  .empty-guide{max-width:560px;text-align:left;padding:22px 24px;}
+  .empty-guide h3{margin:0 0 6px;font-size:16px;}
+  .empty-guide ol{margin:10px 0 16px;padding-left:20px;line-height:1.7;}
+  .status-actions{margin-top:8px;}
+  .status-actions .btn{margin-top:0;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .note-indicator{color:var(--accent);font-size:12px;margin-left:4px;}
+  .project-row{display:flex;gap:5px;align-items:center;}
+  .project-row select{flex:1;min-width:0;}
+  .project-row input{width:105px;}
+  @media print{header,aside,.toolbar,.tabs,.figtools,#status .warn{display:none!important;}main{padding:0;overflow:visible}.figure{border:none;max-width:none}.tab{display:none!important}.tab.active{display:block!important}.summary-card{break-inside:avoid;}}
+  @media (max-width:960px){ .layout{grid-template-columns:1fr;} aside{border-right:none;border-bottom:1px solid var(--border);max-height:none;} main{padding:12px;} .toolbar input[type=text]{width:100%;} .toolbar select{flex:1;min-width:130px;} .tablewrap{max-height:60vh;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Simple Offline Robvis</h1>
+  <span class="sub">Risk-of-bias figure generator — RoB 2 · ROBINS-I v2 (20 Nov 2025 cribsheet)</span>
+</header>
+
+<div class="layout">
+  <aside aria-label="Robvis settings">
+    <nav class="pane-nav" aria-label="Workflow panes" role="tablist">
+      <button type="button" class="active" data-pane="import" role="tab" aria-selected="true">Import</button>
+      <button type="button" data-pane="data" role="tab" aria-selected="false">Data</button>
+      <button type="button" data-pane="figure" role="tab" aria-selected="false">Figure</button>
+      <button type="button" data-pane="export" role="tab" aria-selected="false">Export</button>
+    </nav>
+    <h2>Tool</h2>
+    <select id="tool">
+      <option value="ROB2">RoB 2 (randomized trials)</option>
+      <option value="ROBINS-I v2">ROBINS-I v2 (non-randomized, 6 domains)</option>
+    </select>
+
+    <h2>Data input</h2>
+    <textarea id="paste" spellcheck="false" placeholder="Paste CSV here, then click Import.&#10;&#10;Columns: Study, Result, Outcome, Timepoint, Effect, D1..Dn, Overall, Weight.&#10;Headers optional. Or use one of the buttons below."></textarea>
+    <div class="aside-actions">
+      <button class="btn primary" id="btnImport">Import data</button>
+      <button class="btn" id="btnFile">Upload CSV…</button>
+      <input type="file" id="file" accept=".csv,.txt" hidden>
+    </div>
+    <div class="aside-actions">
+      <button class="btn" id="btnExample">Load example</button>
+      <button class="btn" id="btnTemplate">Download template</button>
+      <button class="btn" id="btnCsvAll">Download data (CSV)</button>
+    </div>
+    <p class="hint">Your pipeline output (risk_of_bias_domain_form.csv with a <code>domain_judgments</code> column) is recognised automatically.</p>
+
+    <h2>Overall</h2>
+    <label class="row"><input type="checkbox" id="optAuto" checked> Auto-compute Overall (tool rule; overridable per row)</label>
+    <label class="row"><input type="checkbox" id="optOverall" checked> Show Overall in figures</label>
+    <label class="row"><input type="checkbox" id="optWeighted"> Use weights in bar plot</label>
+
+    <h2>Figure options</h2>
+    <label class="row">Label rows:
+      <select id="optLabel" style="width:auto">
+        <option value="study+result">Study + result</option>
+        <option value="study+outcome">Study + outcome</option>
+        <option value="study">Study only</option>
+        <option value="assessment">assessment_id</option>
+      </select>
+    </label>
+    <label class="row">Font family:
+      <select id="optFontFamily" style="width:auto">
+        <option value="Helvetica">Helvetica</option>
+        <option value="Arial">Arial</option>
+        <option value="Times">Times</option>
+        <option value="Georgia">Georgia</option>
+      </select>
+    </label>
+    <label class="row">Font size:
+      <select id="optFont" style="width:auto">
+        <option value="0.85">Small</option>
+        <option value="1">Medium</option>
+        <option value="1.15">Large</option>
+      </select>
+    </label>
+    <label class="row">Traffic-light cell size:
+      <input type="range" id="optPsize" min="8" max="16" step="1" value="10" style="width:110px">
+      <span id="psizeVal">10</span>
+    </label>
+    <label class="row">Domain labels:
+      <select id="optDomLabels" style="width:auto">
+        <option value="short">Short (D1..D6)</option>
+        <option value="full">Full names</option>
+      </select>
+    </label>
+    <label class="row"><input type="checkbox" id="optBarPct" checked> Show % labels in bar plot</label>
+    <label class="row"><input type="checkbox" id="optLegend" checked> Show legend</label>
+    <label class="row"><input type="checkbox" id="optCaption" checked> Show domain caption</label>
+    <label class="row">Export width:
+      <select id="optJournal" style="width:auto">
+        <option value="0">Original</option>
+        <option value="3.5">3.5 in (half column)</option>
+        <option value="7">7 in (full width)</option>
+        <option value="8.27">A4 width</option>
+      </select>
+    </label>
+    <label class="row">Colours:
+      <select id="optColour" style="width:auto">
+        <option value="cochrane">Cochrane</option>
+        <option value="colourblind">Colour-blind friendly</option>
+      </select>
+    </label>
+    <label class="row"><input type="checkbox" id="optSplitD1"> Split D1 by variant (ROBINS-I v2 traffic light)</label>
+
+    <h2>Figure text</h2>
+    <label class="row">Title:
+      <input type="text" id="optTitle" placeholder="e.g. Risk of bias — residual shunt outcomes">
+    </label>
+    <label class="row">Subtitle:
+      <input type="text" id="optSubtitle" placeholder="Optional second line">
+    </label>
+    <label class="row">Footnote:
+      <input type="text" id="optFootnote" placeholder="Defaults to the ROBINS-I v2 note">
+    </label>
+
+    <h2>Custom colours</h2>
+    <div id="colorPickers"></div>
+
+    <h2>Table columns</h2>
+    <div class="cols-group">
+      <label><input type="checkbox" id="colResult" checked> Result</label>
+      <label><input type="checkbox" id="colOutcome" checked> Outcome</label>
+      <label><input type="checkbox" id="colTimepoint" checked> Timepoint</label>
+      <label><input type="checkbox" id="colEffect"> Effect</label>
+      <label><input type="checkbox" id="colDirection"> Direction</label>
+      <label><input type="checkbox" id="colWeight" checked> Weight</label>
+    </div>
+
+    <h2>Projects and presets</h2>
+    <div class="project-row">
+      <select id="projectSelect" aria-label="Saved project"><option value="">No saved projects</option></select>
+      <input type="text" id="projectName" placeholder="Project name" aria-label="Project name">
+    </div>
+    <div class="aside-actions">
+      <button class="btn" id="btnSaveProject">Save project</button>
+      <button class="btn" id="btnDeleteProject">Delete</button>
+      <button class="btn" id="btnPreset">Apply journal preset</button>
+    </div>
+
+    <h2>Backup</h2>
+    <div class="aside-actions">
+      <button class="btn" id="btnBackup">Download backup (JSON)</button>
+      <button class="btn" id="btnPackage">Export complete package</button>
+      <button class="btn" id="btnRestore">Restore backup…</button>
+      <input type="file" id="restoreFile" accept=".json" hidden>
+    </div>
+
+    <div class="aside-actions">
+      <button class="btn" id="btnClear">Clear data</button>
+      <button class="btn" id="btnReset">Reset app</button>
+    </div>
+  </aside>
+
+  <main>
+    <div id="status" aria-live="polite"></div>
+    <div id="summary" class="summary-card" hidden aria-label="Risk of bias summary"></div>
+
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Search studies, results, outcomes…">
+      <select id="filterOutcome"><option value="">All outcomes</option></select>
+      <select id="filterTimepoint"><option value="">All timepoints</option></select>
+      <button class="btn" id="btnUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
+      <button class="btn" id="btnRedo" title="Redo (Ctrl+Y)">↪ Redo</button>
+    </div>
+
+    <nav class="tabs">
+      <button data-tab="tf" class="active">Traffic light</button>
+      <button data-tab="bar">Weighted bar</button>
+      <button data-tab="table">Data table</button>
+    </nav>
+
+    <section id="tab-tf" class="tab active">
+      <div class="figtools">
+        <button class="btn primary" id="tfPng150">PNG (150 dpi)</button>
+        <button class="btn primary" id="tfPng300">PNG (300 dpi)</button>
+        <button class="btn" id="tfSvg">SVG</button>
+        <button class="btn" id="tfCopy">Copy PNG</button>
+        <button class="btn" id="tfCaption">Copy caption</button>
+      </div>
+      <div class="figure"><div id="figTf"></div></div>
+    </section>
+
+    <section id="tab-bar" class="tab">
+      <div class="figtools">
+        <button class="btn primary" id="barPng150">PNG (150 dpi)</button>
+        <button class="btn primary" id="barPng300">PNG (300 dpi)</button>
+        <button class="btn" id="barSvg">SVG</button>
+        <button class="btn" id="barCopy">Copy PNG</button>
+        <button class="btn" id="barStats">Stats CSV</button>
+        <button class="btn" id="barCaption">Copy caption</button>
+      </div>
+      <div class="figure"><div id="figBar"></div></div>
+    </section>
+
+    <section id="tab-table" class="tab">
+      <div class="figtools">
+        <button class="btn primary" id="btnAdd">+ Add row</button>
+        <input type="number" id="addN" min="1" max="50" value="1" title="Number of blank rows to add">
+        <button class="btn" id="btnAddN">Add N rows</button>
+        <label class="row" style="display:inline-flex"><input type="checkbox" id="optGroup"> Group by study</label>
+        <label class="row" style="display:inline-flex">Sort:
+          <select id="sortSel" style="width:auto">
+            <option value="original">Original order</option>
+            <option value="study-az">Study A–Z</option>
+            <option value="study-za">Study Z–A</option>
+            <option value="overall-worst">Overall worst first</option>
+            <option value="outcome-az">Outcome A–Z</option>
+          </select>
+        </label>
+      </div>
+      <div id="bulkbar"><span id="bulkCount">0 selected</span>
+        <button class="btn" id="bulkDuplicate">Duplicate</button>
+        <button class="btn" id="bulkDelete">Delete</button>
+        <button class="btn" id="bulkCopy">Copy CSV</button>
+        <span>Fill:</span>
+        <select id="bulkDom"></select>
+        <select id="bulkJudg"></select>
+        <button class="btn" id="bulkFill">Apply</button>
+        <button class="btn" id="bulkWeights">Weights = 1</button>
+        <button class="btn" id="bulkClear">Clear selection</button>
+      </div>
+      <div class="tablewrap"><table id="grid"></table></div>
+      <p class="hint">Ctrl+V pastes a block of cells from Excel into the grid. Drag rows (or use the arrows) to reorder. Grouped rows are ordered within their study.</p>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="wizard">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="wizTitle">Import data</h3><button id="wizClose" title="Close">×</button></div>
+    <div class="modal-body">
+      <div id="wizStep1">
+        <p class="hint">Map each column of your data to a field, then press Next to preview the parsed rows. Domain columns are expected as D1..D6 (or by full domain name).</p>
+        <table id="wizMap"><thead><tr><th>Column</th><th>Maps to</th></tr></thead><tbody></tbody></table>
+        <label class="row"><input type="checkbox" id="wizSplitId" checked> Auto-split assessment_id (Author_Year_Outcome_Timepoint_Effect)</label>
+      </div>
+      <div id="wizStep2" style="display:none">
+        <div id="wizIssues"></div>
+        <div class="tablewrap"><table id="wizPrev"></table></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="wizBack" style="display:none">Back</button>
+      <button class="btn primary" id="wizNext">Next</button>
+      <button class="btn primary" id="wizApply" style="display:none">Apply</button>
+      <button class="btn" id="wizCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div id="dropOverlay"><span>Drop CSV file to import</span></div>
+
+<script>
+"use strict";
+
+var JUDG = {
+  l:{label:"Low risk of bias",      short:"Low",           glyph:"+", cochrane:"#02C100", blind:"#fed98e"},
+  m:{label:"Moderate risk of bias", short:"Moderate",      glyph:"-", cochrane:"#E2DF07", blind:"#fe9929"},
+  s:{label:"Serious risk of bias",  short:"Serious",       glyph:"X", cochrane:"#BF0000", blind:"#d95f0e"},
+  h:{label:"High risk of bias",     short:"High",          glyph:"X", cochrane:"#BF0000", blind:"#d95f0e"},
+  c:{label:"Critical risk of bias", short:"Critical",      glyph:"!", cochrane:"#820000", blind:"#993404"},
+  n:{label:"No information",        short:"No information",glyph:"?", cochrane:"#4EA1F7", blind:"#ffffff"},
+  z:{label:"Not assessed",          short:"Not assessed",  glyph:"",  cochrane:"#e6e6e6", blind:"#e6e6e6"},
+  x:{label:"Not applicable",        short:"Not applicable",glyph:"",  cochrane:"#cccccc", blind:"#cccccc"}
+};
+
+/* Per-tool presentation overrides for judgement codes.
+   RoB 2 uses code "s" for its middle category "Some concerns", which must not
+   be drawn with the ROBINS-I "Serious" label/colour/glyph. */
+var TOOL_JUDG = {
+  "ROB2": {
+    s:{label:"Some concerns", short:"Some concerns", glyph:"!", cochrane:"#E2DF07", blind:"#fe9929"}
+  },
+  "ROBINS-I v2": {}
+};
+function jinfo(code){
+  var o = TOOL_JUDG[STATE.tool] && TOOL_JUDG[STATE.tool][code];
+  return o || JUDG[code];
+}
+
+var DIRLIST = ["","favours-intervention","favours-comparator","towards-null","away-from-null","unpredictable"];
+var DIRLABEL = {
+  "":"",
+  "favours-intervention":"Favours intervention",
+  "favours-comparator":"Favours comparator",
+  "towards-null":"Towards null",
+  "away-from-null":"Away from null",
+  "unpredictable":"Unpredictable"
+};
+var DIRGLYPH = {
+  "favours-intervention":"↑",
+  "favours-comparator":"↓",
+  "towards-null":"→",
+  "away-from-null":"←",
+  "unpredictable":"?"
+};
+
+var TOOLS = {
+  "ROB2": {
+    name: "RoB 2",
+    domains: [
+      {code:"D1", name:"Bias arising from the randomization process"},
+      {code:"D2", name:"Bias due to deviations from intended interventions"},
+      {code:"D3", name:"Bias due to missing outcome data"},
+      {code:"D4", name:"Bias in measurement of the outcome"},
+      {code:"D5", name:"Bias in selection of the reported result"}
+    ],
+    judgements: ["l","s","h","n","x","z"],
+    legendOrder: ["h","s","l","n","x","z"],
+    stack: ["x","z","h","s","l"],
+    caption: "Domains:\nD1: Bias arising from the randomization process.\nD2: Bias due to deviations from intended intervention.\nD3: Bias due to missing outcome data.\nD4: Bias in measurement of the outcome.\nD5: Bias in selection of the reported result."
+  },
+  "ROBINS-I v2": {
+    name: "ROBINS-I v2",
+    domains: [
+      {code:"D1", name:"Bias due to confounding"},
+      {code:"D2", name:"Bias in classification of interventions"},
+      {code:"D3", name:"Bias in selection of participants into the study (or into the analysis)"},
+      {code:"D4", name:"Bias due to missing data"},
+      {code:"D5", name:"Bias in measurement of the outcome"},
+      {code:"D6", name:"Bias in selection of the reported result"}
+    ],
+    judgements: ["l","m","s","c","x","z"],
+    legendOrder: ["c","s","m","l","x","z"],
+    stack: ["x","z","c","s","m","l"],
+    caption: "Domains (ROBINS-I v2, cribsheet 20 November 2025):\nD1: Bias due to confounding (Variant A: effect of assignment; Variant B: effect of adhering to intervention).\nD2: Bias in classification of interventions.\nD3: Bias in selection of participants into the study (or into the analysis).\nD4: Bias due to missing data.\nD5: Bias in measurement of the outcome.\nD6: Bias in selection of the reported result.\nOverall algorithm (cribsheet p.49): worst domain, with additive escalation — several Moderate (>=2) to Serious; several Serious (>=2) to Critical.\nOverall Low: Low risk of bias except for concerns about uncontrolled confounding — reached when D1 is Low and all other domains are Low."
+  }
+};
+
+var EXAMPLES = {
+  "ROB2": {
+    header: "Study,D1,D2,D3,D4,D5,Overall",
+    rows: [
+      ["Roberts 2015","Low","Some concerns","Low","Low","Some concerns","Some concerns"],
+      ["Kovacs 2016","Low","Low","Low","Some concerns","Low","Low"],
+      ["Tanaka 2017","Some concerns","High","Some concerns","Low","Some concerns","High"],
+      ["Garcia 2018","Low","Low","High","Low","Low","High"],
+      ["Muller 2019","High","Low","Low","Some concerns","High","High"],
+      ["Chen 2020","Some concerns","Low","Low","Low","Low","Some concerns"]
+    ]
+  },
+  "ROBINS-I v2": {
+    header: "Study,Result,Outcome,Timepoint,Effect,D1,D2,D3,D4,D5,D6,Overall",
+    rows: [
+      ["Li 2025","Li 2025 — residual shunt (6 mo)","Residual shunt","6 months","ITT","Moderate","Low","Low","Low","Low","Moderate","Serious"],
+      ["Li 2026","Li 2026 — residual shunt (6 mo)","Residual shunt","6 months","ITT","Serious","Low","Low","Low","Moderate","Moderate","Serious"],
+      ["Li 2026","Li 2026 — stroke recurrence (12 mo)","Stroke recurrence","12 months","ITT","Serious","Low","Low","Moderate","Moderate","Moderate","Serious"],
+      ["Karagianni 2011","Karagianni 2011 — residual shunt","Residual shunt","6 months","ITT","Serious","Low","Low","Low","Moderate","Moderate","Serious"],
+      ["Konstadina Darsaklis 2014","Darsaklis 2014 — residual shunt","Residual shunt","6 months","ITT","Serious","Low","Moderate","Moderate","Low","Moderate","Serious"],
+      ["Sun 2025","Sun 2025 — residual shunt (12 mo)","Residual shunt","12 months","ITT","Serious","Low","Serious","Serious","Low","Moderate","Critical"],
+      ["Emren 2026","Emren 2026 — stroke recurrence","Stroke recurrence","Long term","ITT","Serious","Low","Moderate","Serious","Serious","Moderate","Critical"],
+      ["Cernic Suligoj 2020","Cernic Suligoj 2020 — residual shunt (long-term TOE)","Residual shunt","Long term","ITT","Serious","Low","Critical","Serious","Moderate","Moderate","Critical"]
+    ]
+  }
+};
+
+var STATE = {
+  tool: "ROB2",
+  rows: { "ROB2": [], "ROBINS-I v2": [] },
+  opts: { auto: true, overall: true, weighted: false, colour: "cochrane" },
+  ui: {
+    label: "study+result", font: 1, journal: "0", splitD1: false,
+    cols: { result:true, outcome:true, timepoint:true, effect:false, direction:false, weight:true },
+    groupBy: false, sortBy: "original", query: "", fOutcome: "", fTimepoint: "",
+    collapsed: {},
+    tab: "tf", title: "", subtitle: "", footnote: "",
+    palette: {}, psize: 10, barPct: true, legend: true, caption: true,
+    domainLabels: "short", fontFamily: "Helvetica"
+  }
+};
+
+var STORE_KEY = "simpleOfflineRobvis_v2";
+var LEGACY_KEY = "simpleOfflineRobvis_v1";
+var PROJECT_KEY = "simpleOfflineRobvis_projects_v1";
+var historyStack = [];
+var historyPos = -1;
+var projects = {};
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+function wrapText(str, maxChars){
+  var out = [];
+  var lines = String(str).split("\n");
+  for (var i=0;i<lines.length;i++){
+    var words = lines[i].split(" ");
+    var cur = "";
+    for (var w=0;w<words.length;w++){
+      var next = cur ? cur + " " + words[w] : words[w];
+      if (next.length <= maxChars) cur = next;
+      else { if (cur) out.push(cur); cur = words[w]; }
+    }
+    if (cur) out.push(cur);
+  }
+  return out;
+}
+
+function tool(){ return TOOLS[STATE.tool]; }
+function rows(){ return STATE.rows[STATE.tool]; }
+function setRows(r){ STATE.rows[STATE.tool] = r; }
+
+function colourOf(code){
+  if (STATE.ui.palette && STATE.ui.palette[code]) return STATE.ui.palette[code];
+  var c = STATE.opts.colour === "colourblind" ? jinfo(code).blind : jinfo(code).cochrane;
+  return c || "#cccccc";
+}
+
+function fontFamilyCss(){
+  var f = STATE.ui.fontFamily || "Helvetica";
+  if (f === "Helvetica") return "Helvetica, Arial, sans-serif";
+  if (f === "Arial") return "Arial, Helvetica, sans-serif";
+  if (f === "Times") return "\"Times New Roman\", Times, serif";
+  if (f === "Georgia") return "Georgia, \"Times New Roman\", serif";
+  return "Helvetica, Arial, sans-serif";
+}
+
+function blankRow(){
+  var d = [];
+  for (var i=0;i<tool().domains.length;i++) d.push("x");
+  return { study:"", result:"", outcome:"", timepoint:"", effect:"", notes:"", d:d, d1variant:"", dir:[], dirOverall:"", overall:"", override:false, weight:1 };
+}
+
+function normalizeHeader(value){
+  return String(value == null ? "" : value).toLowerCase().replace(/[\uFEFF_-]+/g," ").replace(/\s+/g," ").trim();
+}
+
+function codeOf(raw, t, warns, where){
+  var v = String(raw == null ? "" : raw).trim().toLowerCase().replace(/\s+/g," ");
+  var isV2 = (t === "ROBINS-I v2");
+  if (v === "") return isV2 ? "z" : "n";
+  if (/^(not applicable|n\/a|na|x|\-|—|\.)$/.test(v)) return "x";
+  if (/^(not assessed|not started|ns)$/.test(v)) return "z";
+  if (isV2){
+    var noParentheses = v.replace(/[()]/g, "");
+    if (/^(low( risk( of bias)?)?|l)$/.test(v) || /^low( risk of bias)? except for concerns about uncontrolled confounding/.test(noParentheses)) return "l";
+    if (/^(moderate( risk( of bias)?)?|mod|m)$/.test(v)) return "m";
+    if (/^(serious( risk( of bias)?)?|se|sr|s)$/.test(v)) return "s";
+    if (/^(critical( risk( of bias)?)?|crit|cr|c)$/.test(v)) return "c";
+    if (/^(no information|no info|ni|n|some concerns?|unclear|u|high( risk( of bias)?)?|h|hr)$/.test(v)){
+      if (warns) warns.push("Judgement \"" + raw + "\" at " + where + " is not a ROBINS-I v2 domain judgement — shown as Not applicable.");
+      return "x";
+    }
+  } else {
+    if (/^(low( risk( of bias)?)?|l)$/.test(v)) return "l";
+    if (/^(some concerns?|unclear|u|moderate( risk( of bias)?)?|mod|m|s)$/.test(v)) return "s";
+    if (/^(high( risk( of bias)?)?|serious( risk( of bias)?)?|se|sr|h|hr)$/.test(v)) return "h";
+    if (/^(critical( risk( of bias)?)?|crit|cr|c)$/.test(v)){
+      if (warns) warns.push("Judgement \"" + raw + "\" at " + where + " is not a standard RoB 2 category — interpreted as High risk.");
+      return "h";
+    }
+    if (/^(no information|no info|ni|n)$/.test(v)) return "n";
+  }
+  if (warns) warns.push("Unrecognised judgement \"" + raw + "\" at " + where + " — shown as Not applicable.");
+  return "x";
+}
+
+function directionOf(raw, warns, where){
+  var v = normalizeHeader(raw);
+  if (v === "") return "";
+  if (v.indexOf("favours intervention") !== -1 || v.indexOf("favors intervention") !== -1 || v === "fi") return "favours-intervention";
+  if (v.indexOf("favours comparator") !== -1 || v.indexOf("favors comparator") !== -1 || v === "fc") return "favours-comparator";
+  if (v.indexOf("towards null") !== -1 || v === "tn") return "towards-null";
+  if (v.indexOf("away from null") !== -1 || v === "an") return "away-from-null";
+  if (v.indexOf("unpredictable") !== -1 || v === "u") return "unpredictable";
+  if (warns) warns.push("Unrecognised direction of bias \"" + raw + "\" at " + where + " — ignored.");
+  return "";
+}
+
+function parseWeight(raw, warns, where){
+  var text = String(raw == null ? "" : raw).trim();
+  if (text === "") return 1;
+  var value = Number(text);
+  if (!isFinite(value) || value < 0){
+    warns.push("Invalid weight \"" + raw + "\" at " + where + " — defaulted to 1.");
+    return 1;
+  }
+  return value;
+}
+
+function severityOf(code, t){
+  if (t === "ROB2") return {l:0, s:1, n:1, h:2}[code];
+  return {l:0, m:1, s:2, c:3}[code];
+}
+
+function computeOverall(t, codes){
+  var sev = [];
+  for (var i=0;i<codes.length;i++){
+    var s = severityOf(codes[i], t);
+    if (s !== undefined && codes[i] !== "x" && codes[i] !== "z") sev.push(s);
+  }
+  if (!sev.length) return "x";
+  if (t === "ROB2"){
+    var max = 0;
+    for (var j=0;j<sev.length;j++) max = Math.max(max, sev[j]);
+    return max >= 2 ? "h" : (max === 1 ? "s" : "l");
+  }
+  var c3 = 0, s2 = 0, m1 = 0, hasM = false, hasS = false, hasC = false;
+  for (var k=0;k<sev.length;k++){
+    if (sev[k] === 3) hasC = true;
+    if (sev[k] === 2) hasS = true;
+    if (sev[k] === 1) hasM = true;
+  }
+  for (var q=0;q<sev.length;q++){
+    if (sev[q] === 2) s2++;
+    if (sev[q] === 1) m1++;
+    if (sev[q] === 3) c3++;
+  }
+  if (c3 >= 1 || s2 >= 2) return "c";
+  if (hasS || m1 >= 2) return "s";
+  if (hasM) return "m";
+  return "l";
+}
+
+function parseCSV(text){
+  var out = [], row = [], field = "", inQ = false;
+  var delim = detectDelim(text);
+  for (var i=0;i<text.length;i++){
+    var ch = text.charAt(i);
+    if (inQ){
+      if (ch === "\""){
+        if (text.charAt(i+1) === "\""){ field += "\""; i++; }
+        else inQ = false;
+      } else field += ch;
+    } else if (ch === "\""){
+      inQ = true;
+    } else if (ch === delim){
+      row.push(field); field = "";
+    } else if (ch === "\n" || ch === "\r"){
+      if (ch === "\r" && text.charAt(i+1) === "\n") i++;
+      row.push(field); field = "";
+      if (row.some(function(c){ return c.trim() !== ""; })) out.push(row);
+      row = [];
+    } else field += ch;
+  }
+  if (field !== "" || row.length > 0){ row.push(field); if (row.some(function(c){ return c.trim() !== ""; })) out.push(row); }
+  return out;
+}
+
+function detectDelim(text){
+  var first = "";
+  for (var i=0;i<text.length;i++){
+    var ch = text.charAt(i);
+    if (ch === "\n" || ch === "\r") break;
+    if (ch !== "\"") first += ch;
+    else { i++; while (i < text.length && text.charAt(i) !== "\"") i++; }
+  }
+  var counts = {",":0, ";":0, "\t":0};
+  for (var j=0;j<first.length;j++) if (counts[first.charAt(j)] !== undefined) counts[first.charAt(j)]++;
+  if (counts[";"] > counts[","] && counts[";"] >= counts["\t"]) return ";";
+  if (counts["\t"] > counts[","]) return "\t";
+  return ",";
+}
+
+function isHeaderRow(cells){
+  var known = ["study","id","result","author","label","tool","assessment_id","result_id","outcome","timepoint","effect","variant","direction","overall","weight","d1","d2","d3","d4","d5","d6","domain","domain_judgments","domain judgments","study_id","overall_judgment","judgement","risk of bias"];
+  for (var i=0;i<cells.length;i++){
+    var c = normalizeHeader(cells[i]);
+    if (known.indexOf(c) !== -1) return true;
+  }
+  return false;
+}
+
+function firstHeaderIndex(header, names){
+  for (var n=0;n<names.length;n++){
+    var target = normalizeHeader(names[n]);
+    for (var i=0;i<header.length;i++) if (normalizeHeader(header[i]) === target) return i;
+  }
+  return -1;
+}
+
+function domainIndexFromName(name, t){
+  var n = normalizeHeader(name);
+  if (t === "ROBINS-I v2"){
+    if (n.indexOf("reported result") !== -1 || n.indexOf("selective reporting") !== -1) return 5;
+    if (n.indexOf("confounding") !== -1) return 0;
+    if (n.indexOf("classification") !== -1) return 1;
+    if (n.indexOf("selection of participants") !== -1 || n.indexOf("selection into the study") !== -1 || n === "selection") return 2;
+    if (n.indexOf("missing data") !== -1) return 3;
+    if (n.indexOf("measurement of the outcome") !== -1 || n === "measurement") return 4;
+  } else {
+    if (n.indexOf("randomization") !== -1) return 0;
+    if (n.indexOf("deviations") !== -1) return 1;
+    if (n.indexOf("missing outcome") !== -1) return 2;
+    if (n.indexOf("measurement of the outcome") !== -1 || n.indexOf("outcome measurement") !== -1) return 3;
+    if (n.indexOf("reported result") !== -1 || n.indexOf("selective reporting") !== -1) return 4;
+  }
+  return -1;
+}
+
+function pipeValues(value){
+  return String(value == null ? "" : value).split("|").map(function(v){ return v.trim(); }).filter(function(v){ return v !== ""; });
+}
+
+function splitAssessmentId(result, splitId){
+  if (!splitId) return null;
+  var m = /^([A-Za-z\u00C0-\u024F]+)_\d{4}_(.+)$/.exec(String(result || "").trim());
+  if (!m) return null;
+  var rest = m[2].split("_");
+  var outcome = [], timepoint = "", effect = "";
+  var tpRe = /^(1|3|6|12|18|24|36)?\s?(mo(nth)?s?|m|years?|yrs?|yr|weeks?|w|long[-\s]?term)$/i;
+  var efRe = /^(itt|as|ad|assignment|adherence|per[-\s]?protocol|pp)$/i;
+  for (var i=0;i<rest.length;i++){
+    var token = rest[i];
+    if (!timepoint && tpRe.test(token)) timepoint = token;
+    else if (!effect && efRe.test(token)) effect = token;
+    else outcome.push(token);
+  }
+  return { outcome: outcome.join(" "), timepoint: timepoint, effect: effect };
+}
+
+function detectSpec(header, t){
+  var spec = {
+    study:-1, result:-1, outcome:-1, timepoint:-1, effect:-1, variant:-1, direction:-1,
+    overall:-1, weight:-1, dom:[], d1a:-1, d1b:-1, dirs:[], domForm:-1, splitId:true
+  };
+  if (!header) return spec;
+  spec.study = firstHeaderIndex(header, ["study", "study_id", "id", "author", "label"]);
+  spec.result = firstHeaderIndex(header, ["assessment_id", "result_id", "result", "assessment"]);
+  spec.outcome = firstHeaderIndex(header, ["outcome"]);
+  spec.timepoint = firstHeaderIndex(header, ["timepoint", "time point", "follow up", "follow-up"]);
+  spec.effect = firstHeaderIndex(header, ["effect", "effect of interest", "causal contrast"]);
+  spec.variant = firstHeaderIndex(header, ["variant", "d1 variant"]);
+  spec.direction = firstHeaderIndex(header, ["direction", "direction of bias", "dir"]);
+  spec.overall = firstHeaderIndex(header, ["overall", "overall judgment", "overall_judgment"]);
+  spec.weight = firstHeaderIndex(header, ["weight", "weights"]);
+  var domCols = [];
+  for (var h=0;h<header.length;h++){
+    var mm = /^d(\d+)$/.exec(normalizeHeader(header[h]));
+    if (mm) domCols.push({index:h, number:parseInt(mm[1],10)});
+  }
+  if (domCols.length === 0){
+    for (var k=0;k<header.length;k++){
+      var dn = domainIndexFromName(header[k], t);
+      if (dn >= 0) domCols.push({index:k, number:dn + 1});
+    }
+  }
+  domCols.sort(function(a,b){ return a.number - b.number; });
+  var seen = {};
+  domCols = domCols.filter(function(d){ if (seen[d.number]) return false; seen[d.number] = true; return true; });
+  spec.dom = domCols;
+  spec.d1a = firstHeaderIndex(header, ["d1a", "d1 a", "d1 variant a"]);
+  spec.d1b = firstHeaderIndex(header, ["d1b", "d1 b", "d1 variant b"]);
+  var dirCols = [];
+  for (var h2=0;h2<header.length;h2++){
+    var dm = /^d(\d+)[_\-\s]?(dir|direction)$/.exec(normalizeHeader(header[h2]));
+    if (dm) dirCols.push({index:h2, number:parseInt(dm[1],10)});
+  }
+  spec.dirs = dirCols;
+  var dj = firstHeaderIndex(header, ["domain_judgments", "domain judgments"]);
+  if (dj >= 0) spec.domForm = dj;
+  return spec;
+}
+
+function domainFormWarningsCheck(header, spec){
+  var n = tool().domains.length;
+  if (spec.domForm >= 0) return true;
+  return spec.dom.length === n && spec.dom.every(function(d){ return d.number >= 1 && d.number <= n; });
+}
+
+function importData(text, t, specOverride){
+  var warns = [];
+  var grid = parseCSV(text);
+  if (grid.length === 0) return {rows:[], warns:warns, error:"No data rows found."};
+  var header = isHeaderRow(grid[0]) ? grid.shift().map(function(c){ return String(c).trim().toLowerCase(); }) : null;
+  var spec = specOverride || detectSpec(header, t);
+
+  if (spec.domForm >= 0) return importDomainForm(grid, header, spec, t, warns);
+
+  var nDom = tool().domains.length;
+  var domIdx = [], dirIdx = [];
+  if (spec.dom && spec.dom.length){
+    for (var di=0;di<spec.dom.length;di++) domIdx[spec.dom[di].number - 1] = spec.dom[di].index;
+  }
+  if (spec.dirs && spec.dirs.length){
+    for (var dri=0;dri<spec.dirs.length;dri++) dirIdx[spec.dirs[dri].number - 1] = spec.dirs[dri].index;
+  }
+  var positional = !header;
+  if (positional){
+    for (var p=0;p<nDom;p++) domIdx[p] = p + 1;
+    var nExtra = grid[0].length - (nDom + 1);
+    if (nExtra >= 1){
+      var lastCols = grid.map(function(r){ return r[r.length-1]; });
+      var allNumeric = lastCols.every(function(c){ return c.trim() !== "" && !isNaN(Number(c)); });
+      if (allNumeric){ spec.weight = nDom + 1; nExtra--; }
+      if (nExtra >= 1) spec.overall = nDom;
+    }
+    spec.study = 0;
+  }
+  var hasAllDomains = domIdx.filter(function(x){ return x !== undefined; }).length === nDom;
+  if (!hasAllDomains){
+    var found = domIdx.filter(function(x){ return x !== undefined; }).length;
+    return {rows:[], warns:warns, error:"Expected " + nDom + " domain columns for " + tool().name + ", found " + found + "."};
+  }
+  if (spec.study < 0) spec.study = spec.result >= 0 ? spec.result : 0;
+
+  var used = {};
+  var mark = function(ix){ if (ix >= 0) used[ix] = true; };
+  mark(spec.study); mark(spec.result); mark(spec.outcome); mark(spec.timepoint); mark(spec.effect);
+  mark(spec.overall); mark(spec.weight); mark(spec.variant); mark(spec.direction); mark(spec.d1a); mark(spec.d1b);
+  domIdx.forEach(mark); dirIdx.forEach(function(ix){ if (ix !== undefined) mark(ix); });
+  var extras = [];
+  for (var e=0;e<grid[0].length;e++) if (!used[e]) extras.push(header ? header[e] : ("column " + (e+1)));
+  if (extras.length) warns.push("Ignored extra column" + (extras.length > 1 ? "s" : "") + ": " + extras.join(", ") + ".");
+
+  var out = [];
+  for (var r=0;r<grid.length;r++){
+    var raw = grid[r], codes = [], missing = [];
+    var get = function(ix){ return ix >= 0 && ix < raw.length ? String(raw[ix]).trim() : ""; };
+    for (var j=0;j<nDom;j++){
+      var val = get(domIdx[j]);
+      var where = "row " + (r + (header ? 2 : 1)) + " (" + (get(spec.study) || "?") + ")";
+      codes.push(codeOf(val, t, warns, where));
+      if (val === "") missing.push(tool().domains[j].code);
+    }
+    var resultRaw = get(spec.result);
+    var split = splitAssessmentId(resultRaw, spec.splitId !== false);
+    var rowObj = {
+      study: get(spec.study),
+      result: resultRaw,
+      outcome: get(spec.outcome) || (split ? split.outcome : ""),
+      timepoint: get(spec.timepoint) || (split ? split.timepoint : ""),
+      effect: get(spec.effect) || (split ? split.effect : ""),
+      d: codes,
+      d1variant: "",
+      dir: [],
+      dirOverall: get(spec.direction) ? directionOf(get(spec.direction), warns, "row " + (r + (header ? 2 : 1))) : "",
+      overall: "",
+      override: false,
+      weight: spec.weight >= 0 ? parseWeight(get(spec.weight), warns, "row " + (r + (header ? 2 : 1))) : 1
+    };
+    for (var dd=0;dd<nDom;dd++){
+      rowObj.dir[dd] = dirIdx[dd] !== undefined ? directionOf(get(dirIdx[dd]), warns, "row " + (r + (header ? 2 : 1))) : "";
+    }
+    if (spec.variant >= 0){
+      var vv = normalizeHeader(get(spec.variant));
+      rowObj.d1variant = vv === "b" || vv.indexOf("variant b") !== -1 || vv === "pp" || vv === "adhering" ? "B" : "A";
+    } else if (spec.d1a >= 0 || spec.d1b >= 0){
+      var aVal = get(spec.d1a), bVal = get(spec.d1b);
+      if (bVal && !aVal){ rowObj.d1variant = "B"; codes[0] = codeOf(bVal, t, warns, "row " + (r + (header ? 2 : 1)) + " D1B"); }
+      else if (aVal){ rowObj.d1variant = "A"; codes[0] = codeOf(aVal, t, warns, "row " + (r + (header ? 2 : 1)) + " D1A"); if (bVal) warns.push("Row \"" + rowObj.study + "\": both D1A and D1B provided — variant A used."); }
+    }
+    var ov = get(spec.overall);
+    var hasOverall = ov !== "";
+    var overallCode = codeOf(ov, t, warns, "row " + (r + (header ? 2 : 1)) + " Overall");
+    var autoCode = computeOverall(t, codes);
+    if (hasOverall && overallCode !== autoCode){
+      warns.push("Row \"" + rowObj.study + "\": supplied Overall (" + jinfo(overallCode).short + ") differs from auto-computed Overall (" + jinfo(autoCode).short + "); supplied value preserved as an override.");
+    }
+    rowObj.overall = hasOverall ? overallCode : "";
+    rowObj.override = hasOverall;
+    if (missing.length){
+      var blankAs = t === "ROBINS-I v2" ? "Not assessed" : "No information";
+      warns.push("Row \"" + rowObj.study + "\": empty cell" + (missing.length > 1 ? "s" : "") + " in " + missing.join(", ") + " — recorded as " + blankAs + ".");
+    }
+    out.push(rowObj);
+  }
+  var nonEmpty = out.filter(function(x){
+    return x.study.trim() !== "" || x.result.trim() !== "" || x.d.some(function(c){ return c !== "x" && c !== "z"; });
+  });
+  var dropped = out.length - nonEmpty.length;
+  if (dropped > 0) warns.push("Dropped " + dropped + " completely empty row" + (dropped > 1 ? "s" : "") + ".");
+  return {rows:nonEmpty, warns:warns, hasWeights:spec.weight >= 0};
+}
+
+function importDomainForm(grid, header, spec, t, warns){
+  var toolIdx = firstHeaderIndex(header, ["tool"]);
+  var wantRoB2 = t === "ROB2", skipped = 0;
+  if (toolIdx !== -1){
+    grid = grid.filter(function(raw){
+      var tv = toolIdx < raw.length ? String(raw[toolIdx]).toLowerCase() : "";
+      var isRobins = tv.indexOf("robins") !== -1;
+      var isRob2 = tv.indexOf("rob2") !== -1 || tv.indexOf("rob 2") !== -1;
+      if (wantRoB2 ? isRob2 : isRobins) return true;
+      skipped++;
+      return false;
+    });
+    if (skipped > 0) warns.push("Skipped " + skipped + " row" + (skipped > 1 ? "s" : "") + " for the other tool (filtered by the 'tool' column).");
+  }
+  var get = function(raw, ix){ return ix >= 0 && ix < raw.length ? String(raw[ix]).trim() : ""; };
+  var out = [];
+  for (var r=0;r<grid.length;r++){
+    var raw = grid[r];
+    var baseLabel = get(raw, spec.study >= 0 ? spec.study : 0);
+    var resultValues = spec.result >= 0 ? pipeValues(get(raw, spec.result)) : [];
+    var cell = get(raw, spec.domForm);
+    var domainValues = [];
+    for (var d=0;d<tool().domains.length;d++) domainValues.push([]);
+    var pairs = String(cell).split("||");
+    for (var p=0;p<pairs.length;p++){
+      var parts = pairs[p].split(":");
+      if (parts.length < 2) continue;
+      var nm = parts.shift().trim();
+      var idx = domainIndexFromName(nm, t);
+      if (idx < 0){ warns.push("Unrecognised domain \"" + nm + "\" in row \"" + baseLabel + "\" — ignored."); continue; }
+      domainValues[idx] = pipeValues(parts.join(":"));
+    }
+    for (var missingDomain=0;missingDomain<domainValues.length;missingDomain++){
+      if (domainValues[missingDomain].length === 0){
+        var blankAs = t === "ROBINS-I v2" ? "Not assessed" : "No information";
+        warns.push("Row \"" + baseLabel + "\": domain " + tool().domains[missingDomain].code + " was not found in domain_judgments — recorded as " + blankAs + ".");
+      }
+    }
+    var overallValues = spec.overall >= 0 ? pipeValues(get(raw, spec.overall)) : [];
+    var nResults = Math.max(1, resultValues.length, overallValues.length);
+    for (var d2=0;d2<domainValues.length;d2++) nResults = Math.max(nResults, domainValues[d2].length);
+    if (nResults > 1) warns.push("Row \"" + baseLabel + "\": expanded " + nResults + " result rows from pipe-separated domain judgments; pipe order was treated as result order.");
+    for (var ri=0;ri<nResults;ri++){
+      var codes = [];
+      for (var d3=0;d3<domainValues.length;d3++){
+        var values = domainValues[d3];
+        var value = values.length === 0 ? "" : (values.length === 1 ? values[0] : (values[ri] || ""));
+        codes.push(codeOf(value, t, warns, "row \"" + baseLabel + "\""));
+      }
+      var resultPart = resultValues.length === 1 ? resultValues[0] : (resultValues[ri] || "");
+      var study = baseLabel;
+      if (resultPart) study = baseLabel + " — " + resultPart;
+      else if (nResults > 1) study = baseLabel + " — result " + (ri + 1);
+      var overallPart = overallValues.length === 1 ? overallValues[0] : (overallValues[ri] || "");
+      var hasOverall = overallPart.trim() !== "";
+      var overallCode = codeOf(overallPart, t, warns, "row \"" + study + "\" Overall");
+      var autoCode = computeOverall(t, codes);
+      if (hasOverall && overallCode !== autoCode) warns.push("Row \"" + study + "\": supplied Overall (" + jinfo(overallCode).short + ") differs from auto-computed Overall (" + jinfo(autoCode).short + "); supplied value preserved as an override.");
+      out.push({
+        study: baseLabel, result: resultPart, outcome:"", timepoint:"", effect:"",
+        d: codes, d1variant:"", dir:[], dirOverall:"",
+        overall: hasOverall ? overallCode : "", override: hasOverall,
+        weight: spec.weight >= 0 ? parseWeight(get(raw, spec.weight), warns, "row \"" + study + "\"") : 1
+      });
+    }
+  }
+  return {rows:out, warns:warns, hasWeights:spec.weight >= 0};
+}
+
+function csvOfRows(rs, t){
+  var nDom = tool().domains.length;
+  var header = ["Study","Result","Outcome","Timepoint","Effect"];
+  for (var i=0;i<nDom;i++) header.push(tool().domains[i].code);
+  var hasVariant = rs.some(function(x){ return x.d1variant; });
+  var hasDir = rs.some(function(x){ return x.dirOverall; });
+  if (hasVariant) header.push("Variant");
+  header.push("Overall");
+  if (hasDir) header.push("Direction");
+  header.push("Weight");
+  var lines = [header.join(",")];
+  for (var r=0;r<rs.length;r++){
+    var row = rs[r], cells = [];
+    cells.push(csvField(row.study), csvField(row.result), csvField(row.outcome), csvField(row.timepoint), csvField(row.effect));
+    for (var j=0;j<nDom;j++) cells.push(row.d[j] ? jinfo(row.d[j]).label : "");
+    if (hasVariant) cells.push(row.d1variant || "");
+    cells.push(row.overall ? jinfo(row.overall).label : "");
+    if (hasDir) cells.push(DIRLABEL[row.dirOverall] || "");
+    cells.push(row.weight);
+    lines.push(cells.join(","));
+  }
+  return "\uFEFF" + lines.join("\r\n");
+}
+
+function csvField(s){
+  s = String(s == null ? "" : s);
+  if (/[",\r\n]/.test(s)) return "\"" + s.replace(/"/g,"\"\"") + "\"";
+  return s;
+}
+
+function downloadFile(name, blob){
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+
+function safeName(s){ return String(s).replace(/[^A-Za-z0-9._-]+/g,"_"); }
+
+function cloneState(){ return JSON.parse(JSON.stringify(STATE)); }
+
+function populateProjects(){
+  var sel = document.getElementById("projectSelect");
+  if (!sel) return;
+  var names = Object.keys(projects).sort(function(a,b){ return a.localeCompare(b); });
+  sel.innerHTML = names.length ? names.map(function(n){ return "<option value=\"" + esc(n) + "\">" + esc(n) + "</option>"; }).join("") : "<option value=\"\">No saved projects</option>";
+}
+
+function loadProjects(){
+  try{ projects = JSON.parse(localStorage.getItem(PROJECT_KEY) || "{}"); }catch(e){ projects = {}; }
+  if (!projects || typeof projects !== "object" || Array.isArray(projects)) projects = {};
+  populateProjects();
+}
+
+function saveProjects(){
+  try{ localStorage.setItem(PROJECT_KEY, JSON.stringify(projects)); }catch(e){ toast("Could not save local project.", "err"); }
+}
+
+function applyJournalPreset(){
+  STATE.ui.journal = "7";
+  STATE.ui.font = 1;
+  STATE.ui.fontFamily = "Arial";
+  STATE.ui.legend = true;
+  STATE.ui.caption = true;
+  STATE.ui.barPct = true;
+  applyStateToUi();
+  renderAll();
+  toast("Journal-ready preset applied.", "ok");
+}
+
+function exportPackage(){
+  var pkg = { format:"simple-offline-robvis-package", version:1, exportedAt:new Date().toISOString(), tool:STATE.tool, state:cloneState(), csv:csvOfRows(rows(), STATE.tool), caption:figureCaption() };
+  downloadFile("robvis_package_" + safeName(tool().name) + ".json", new Blob([JSON.stringify(pkg, null, 2)], {type:"application/json"}));
+  toast("Complete package exported with data, settings, and caption.", "ok");
+}
+
+function setupCollapsibleSections(){
+  var aside = document.querySelector("aside");
+  if (!aside || aside.dataset.sectionsReady) return;
+  aside.dataset.sectionsReady = "1";
+  var nodes = Array.prototype.slice.call(aside.children), current = null;
+  nodes.forEach(function(node){
+    if (node.tagName === "H2"){
+      current = document.createElement("details");
+      current.className = "settings-section";
+      current.dataset.pane = paneForSection(node.textContent);
+      current.open = node.textContent === "Tool" || node.textContent === "Data input";
+      var summary = document.createElement("summary");
+      summary.textContent = node.textContent;
+      current.appendChild(summary);
+      aside.insertBefore(current, node);
+      current.appendChild(node);
+      node.style.display = "none";
+    } else if (current){ current.appendChild(node); }
+  });
+}
+
+function paneForSection(title){
+  title = String(title || "").toLowerCase();
+  if (title.indexOf("table") !== -1) return "data";
+  if (title.indexOf("project") !== -1 || title.indexOf("backup") !== -1) return "export";
+  if (title.indexOf("overall") !== -1 || title.indexOf("figure") !== -1 || title.indexOf("colour") !== -1) return "figure";
+  return "import";
+}
+
+function setPane(pane){
+  var navButtons = document.querySelectorAll(".pane-nav button");
+  for (var i=0;i<navButtons.length;i++){
+    var active = navButtons[i].dataset.pane === pane;
+    navButtons[i].classList.toggle("active", active);
+    navButtons[i].setAttribute("aria-selected", active ? "true" : "false");
+    navButtons[i].setAttribute("tabindex", active ? "0" : "-1");
+  }
+  var sections = document.querySelectorAll(".settings-section");
+  for (var s=0;s<sections.length;s++){
+    var match = sections[s].dataset.pane === pane;
+    sections[s].style.display = match ? "" : "none";
+    if (match && (pane === "import" || pane === "figure")) sections[s].open = sections[s].querySelector("summary").textContent === (pane === "import" ? "Tool" : "Overall") || sections[s].open;
+  }
+  if (pane === "data") activateTab("table");
+  else if (pane === "figure") activateTab("tf");
+}
+
+function setupPanes(){
+  var buttons = document.querySelectorAll(".pane-nav button");
+  for (var i=0;i<buttons.length;i++){
+    buttons[i].addEventListener("click", function(){ setPane(this.dataset.pane); });
+    buttons[i].addEventListener("keydown", function(ev){
+      if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+      ev.preventDefault();
+      var all = Array.prototype.slice.call(document.querySelectorAll(".pane-nav button"));
+      var pos = all.indexOf(this), next = ev.key === "ArrowRight" ? (pos + 1) % all.length : (pos - 1 + all.length) % all.length;
+      all[next].focus(); all[next].click();
+    });
+  }
+  setPane("import");
+}
+
+function setupAccessibility(){
+  var nav = document.querySelector(".tabs");
+  if (nav){
+    nav.setAttribute("role", "tablist");
+    nav.querySelectorAll("button").forEach(function(btn){ btn.setAttribute("role", "tab"); btn.setAttribute("aria-controls", "tab-" + btn.dataset.tab); });
+  }
+}
+
+function rowLabel(row, template){
+  template = template || STATE.ui.label;
+  var study = String(row.study || "");
+  if (template === "study") return study;
+  if (template === "assessment"){
+    if (row.result) return row.result;
+    return rowLabel(row, "study+result");
+  }
+  var parts = [];
+  if (study) parts.push(study);
+  if (template === "study+outcome"){
+    if (row.outcome) parts.push(row.outcome + (row.timepoint ? " (" + row.timepoint + ")" : ""));
+    else if (row.timepoint) parts.push(row.timepoint);
+  } else {
+    if (row.result) parts.push(row.result);
+    else if (row.outcome) parts.push(row.outcome + (row.timepoint ? " (" + row.timepoint + ")" : ""));
+    else if (row.timepoint) parts.push(row.timepoint);
+  }
+  return parts.join(" — ");
+}
+
+function pushHistory(){
+  historyStack = historyStack.slice(0, historyPos + 1);
+  historyStack.push(JSON.stringify(rows()));
+  if (historyStack.length > 100) historyStack.shift();
+  historyPos = historyStack.length - 1;
+}
+
+function undo(){
+  if (historyPos > 0){
+    historyPos--;
+    setRows(JSON.parse(historyStack[historyPos]));
+    refreshAll();
+  }
+}
+
+function redo(){
+  if (historyPos < historyStack.length - 1){
+    historyPos++;
+    setRows(JSON.parse(historyStack[historyPos]));
+    refreshAll();
+  }
+}
+
+function updateOveralls(){
+  var t = STATE.tool;
+  var rs = rows();
+  for (var i=0;i<rs.length;i++){
+    if (!rs[i].override && STATE.opts.auto) rs[i].overall = computeOverall(t, rs[i].d);
+  }
+}
+
+function displayRows(){
+  var rs = rows();
+  var q = STATE.ui.query.trim().toLowerCase();
+  var out = [];
+  for (var i=0;i<rs.length;i++){
+    var row = rs[i];
+    if (q){
+      var hay = [row.study, row.result, row.outcome, row.timepoint, row.effect].join(" ").toLowerCase();
+      if (hay.indexOf(q) === -1) continue;
+    }
+    if (STATE.ui.fOutcome && row.outcome !== STATE.ui.fOutcome) continue;
+    if (STATE.ui.fTimepoint && row.timepoint !== STATE.ui.fTimepoint) continue;
+    out.push(row);
+  }
+  return out;
+}
+
+function sortRows(){
+  var s = STATE.ui.sortBy;
+  if (!s || s === "original") return;
+  var rs = rows();
+  var sevOf = function(c){ var v = severityOf(c, STATE.tool); return v === undefined ? -1 : v; };
+  rs.sort(function(a,b){
+    if (s === "study-az") return String(a.study).localeCompare(String(b.study));
+    if (s === "study-za") return String(b.study).localeCompare(String(a.study));
+    if (s === "overall-worst") return sevOf(b.overall) - sevOf(a.overall);
+    if (s === "outcome-az") return String(a.outcome).localeCompare(String(b.outcome));
+    return 0;
+  });
+}
+
+function renderAll(){
+  updateOveralls();
+  renderStatus();
+  renderSummary();
+  renderTable();
+  renderTraffic();
+  renderBar();
+  save();
+}
+
+function refreshAll(){
+  renderStatus();
+  renderSummary();
+  renderTable();
+  renderTraffic();
+  renderBar();
+  save();
+}
+
+function renderStatus(){
+  var el = document.getElementById("status");
+  var rs = rows();
+  var shown = displayRows();
+  var html = "<div class=\"info\">" + tool().name + " — " + rs.length + " row" + (rs.length === 1 ? "" : "s");
+  if (rs.length) html += " · Overall: " + overallSummary(shown);
+  if (shown.length !== rs.length) html += " · " + shown.length + " of " + rs.length + " shown";
+  html += "</div>";
+  var conflicts = findConflicts(rs);
+  if (conflicts.length){
+    html += "<div class=\"warn\"><strong>Duplicate result conflicts:</strong><ul>";
+    for (var i=0;i<conflicts.length;i++) html += "<li>" + esc(conflicts[i]) + "</li>";
+    html += "</ul></div>";
+  }
+  var validation = validateRows(rs);
+  if (validation.length){
+    html += "<div class=\"warn\"><strong>Validation:</strong><ul>" + validation.slice(0, 5).map(function(v){ return "<li>" + esc(v) + "</li>"; }).join("") + (validation.length > 5 ? "<li>… and " + (validation.length - 5) + " more</li>" : "") + "</ul></div>";
+  }
+  if (stateWarns && stateWarns.length){
+    html += "<div class=\"warn\"><strong>Import warnings:</strong><ul>";
+    var shownW = stateWarns.slice(0, 6);
+    for (var w=0;w<shownW.length;w++) html += "<li>" + esc(shownW[w]) + "</li>";
+    if (stateWarns.length > shownW.length) html += "<li>… and " + (stateWarns.length - shownW.length) + " more</li>";
+    html += "</ul></div>";
+  }
+  el.innerHTML = html;
+}
+
+function validateRows(rs){
+  var issues = [], seen = {};
+  for (var i=0;i<rs.length;i++){
+    var r = rs[i], label = r.study || "Row " + (i + 1);
+    if (!String(r.study || "").trim()) issues.push(label + " has no study label.");
+    var key = String(r.study || "").trim().toLowerCase() + "|" + String(r.result || "").trim().toLowerCase();
+    if (key !== "|" && seen[key] !== undefined) issues.push(label + " duplicates row " + (seen[key] + 1) + ".");
+    else if (key !== "|") seen[key] = i;
+    if (r.d && r.d.some(function(c){ return c === "x" || c === "z"; })) issues.push(label + " has an unassessed or not-applicable domain.");
+  }
+  return issues;
+}
+
+function renderSummary(){
+  var el = document.getElementById("summary"), rs = displayRows();
+  if (!rs.length){ el.hidden = true; el.innerHTML = ""; return; }
+  var counts = {};
+  rs.forEach(function(r){ counts[r.overall || "x"] = (counts[r.overall || "x"] || 0) + 1; });
+  var cards = [{k:"total",label:"Studies",value:rs.length}];
+  tool().judgements.forEach(function(code){ cards.push({k:code,label:jinfo(code).short || jinfo(code).label,value:counts[code] || 0}); });
+  el.innerHTML = cards.map(function(c){ return "<div class=\"metric\" data-judgement=\"" + c.k + "\"><strong>" + c.value + "</strong><span>" + esc(c.label) + "</span></div>"; }).join("");
+  el.hidden = false;
+}
+
+function findConflicts(rs){
+  var map = {};
+  for (var i=0;i<rs.length;i++){
+    var row = rs[i];
+    var key = (row.study || "?") + "|" + (row.result || row.outcome || "");
+    if (!key || key === "?|") continue;
+    var sig = JSON.stringify(row.d) + "|" + (row.overall || "");
+    if (map[key] !== undefined && map[key] !== sig){
+      if (map[key] !== "__flagged__"){
+        map[key] = "__flagged__";
+      }
+    } else if (map[key] === undefined){
+      map[key] = sig;
+    }
+  }
+  var out = [];
+  for (var k in map){
+    if (map[k] === "__flagged__") out.push("Same study/result \"" + k.replace(/\|/g, " — ") + "\" appears with different domain judgements.");
+  }
+  return out;
+}
+
+function overallSummary(rs){
+  var counts = {};
+  for (var i=0;i<rs.length;i++){
+    var o = rs[i].overall || "x";
+    counts[o] = (counts[o] || 0) + 1;
+  }
+  var parts = [];
+  for (var c in counts) parts.push(jinfo(c).short + " " + counts[c]);
+  return parts.join(" · ") || "—";
+}
+
+function columnRoles(){
+  var roles = ["chk","study"];
+  var c = STATE.ui.cols;
+  if (c.result) roles.push("result");
+  if (c.outcome) roles.push("outcome");
+  if (c.timepoint) roles.push("timepoint");
+  if (c.effect) roles.push("effect");
+  for (var i=0;i<tool().domains.length;i++) roles.push("d" + i);
+  roles.push("overall");
+  if (c.weight) roles.push("weight");
+  if (c.direction) roles.push("direction");
+  roles.push("del");
+  return roles;
+}
+
+function renderTable(){
+  var tb = document.getElementById("grid");
+  var roles = columnRoles();
+  var shown = displayRows();
+  var grouped = null;
+  if (STATE.ui.groupBy) grouped = groupRows(shown);
+
+  var html = "<thead><tr><th class=\"sticky\"><input type=\"checkbox\" id=\"chkAll\"></th>";
+  var rendered = 0;
+  for (var i=0;i<roles.length;i++){
+    if (roles[i] === "chk" || roles[i] === "del") continue;
+    rendered++;
+    var cls = rendered === 1 ? "sticky2" : "";
+    html += "<th" + (cls ? " class=\"" + cls + "\"" : "") + ">" + roleHeader(roles[i]) + "</th>";
+  }
+  html += "<th></th></tr></thead><tbody>";
+
+  var renderRow = function(row, idx){
+    html += "<tr data-idx=\"" + idx + "\" draggable=\"true\">";
+    html += "<td class=\"sticky\"><input type=\"checkbox\" class=\"chk\" data-idx=\"" + idx + "\"></td>";
+    var colPos = 0;
+    for (var c=0;c<roles.length;c++){
+      var role = roles[c];
+      if (role === "chk" || role === "del") continue;
+      colPos++;
+      var cls = colPos === 1 ? "sticky2" : "";
+      var tdOpen = "<td" + (cls ? " class=\"" + cls + "\"" : "") + ">";
+      if (role === "study"){
+        html += tdOpen + "<input type=\"text\" class=\"lbl\" data-field=\"study\" list=\"studyList\" value=\"" + esc(row.study) + "\"></td>";
+      } else if (role === "result"){
+        html += tdOpen + "<input type=\"text\" class=\"lbl\" data-field=\"result\" value=\"" + esc(row.result) + "\"></td>";
+      } else if (role === "outcome"){
+        html += tdOpen + "<input type=\"text\" class=\"lbl\" data-field=\"outcome\" value=\"" + esc(row.outcome) + "\"></td>";
+      } else if (role === "timepoint"){
+        html += tdOpen + "<input type=\"text\" class=\"lbl\" data-field=\"timepoint\" value=\"" + esc(row.timepoint) + "\"></td>";
+      } else if (role === "effect"){
+        html += tdOpen + "<input type=\"text\" class=\"lbl\" data-field=\"effect\" value=\"" + esc(row.effect) + "\"></td>";
+      } else if (role.indexOf("d") === 0 && role.length === 2){
+        var dj = parseInt(role.slice(1), 10);
+        html += tdOpen + "<select class=\"dom\" data-col=\"" + dj + "\">" + domOptions(row.d[dj]) + "</select></td>";
+      } else if (role === "overall"){
+        var autoVal = computeOverall(STATE.tool, row.d);
+        var currentOverall = row.overall || (STATE.opts.auto ? autoVal : "x");
+        html += tdOpen + "<select class=\"ov\" " + (STATE.opts.auto && !row.override ? "disabled" : "") + ">" + ovOptions(currentOverall, autoVal, STATE.opts.auto && !row.override) + "</select>";
+        if (STATE.opts.auto && !row.override) html += " <button class=\"reset\" data-unlock=\"1\" title=\"Overall is auto-computed. Click to override manually.\">↺</button>";
+        else if (row.override) html += " <button class=\"reset\" data-reset=\"1\" title=\"Restore auto-computed Overall\">↺</button>";
+        html += "</td>";
+      } else if (role === "weight"){
+        html += tdOpen + "<input type=\"number\" class=\"wt\" min=\"0\" step=\"any\" value=\"" + row.weight + "\"></td>";
+      } else if (role === "direction"){
+        html += tdOpen + "<select class=\"dir\">" + dirOptions(row.dirOverall) + "</select></td>";
+      }
+    }
+    html += "<td><button class=\"note\" title=\"Edit row note\" aria-label=\"Edit row note\">Note" + (row.notes ? " •" : "") + "</button><button class=\"dup\" title=\"Duplicate row\" aria-label=\"Duplicate row\">⧉</button><button class=\"up\" title=\"Move up\" aria-label=\"Move row up\">↑</button><button class=\"down\" title=\"Move row down\" aria-label=\"Move row down\">↓</button><button class=\"del\" title=\"Remove row\" aria-label=\"Remove row\">✕</button></td>";
+    html += "</tr>";
+  };
+
+  if (grouped){
+    for (var g=0;g<grouped.length;g++){
+      var grp = grouped[g];
+      var collapsed = STATE.ui.collapsed[grp.study];
+      html += "<tr class=\"group-row\" data-group=\"" + esc(grp.study) + "\"><td colspan=\"" + (roles.length) + "\">" + (collapsed ? "▸" : "▾") + " " + esc(grp.study || "(unnamed)") + "<span class=\"gcount\">" + grp.rows.length + " result" + (grp.rows.length > 1 ? "s" : "") + "</span></td></tr>";
+      if (!collapsed){
+        for (var gr=0;gr<grp.rows.length;gr++){
+          var rowRef = grp.rows[gr];
+          renderRow(rowRef, grp.indices[gr]);
+        }
+      }
+    }
+  } else {
+    for (var r2=0;r2<shown.length;r2++) renderRow(shown[r2], rows().indexOf(shown[r2]));
+  }
+  html += "</tbody>";
+  tb.innerHTML = html;
+  var dl = document.getElementById("studyList");
+  if (!dl){
+    dl = document.createElement("datalist");
+    dl.id = "studyList";
+    tb.parentNode.appendChild(dl);
+  }
+  var studies = {};
+  rows().forEach(function(r){ if (r.study) studies[r.study] = true; });
+  dl.innerHTML = Object.keys(studies).map(function(s){ return "<option value=\"" + esc(s) + "\">"; }).join("");
+  renderBulkBar();
+  updateFilterSelects();
+}
+
+function groupRows(shown){
+  var groups = [], map = {};
+  for (var i=0;i<shown.length;i++){
+    var key = shown[i].study;
+    if (map[key] === undefined){
+      map[key] = groups.length;
+      groups.push({study:key, rows:[], indices:[]});
+    }
+    groups[map[key]].rows.push(shown[i]);
+    groups[map[key]].indices.push(rows().indexOf(shown[i]));
+  }
+  return groups;
+}
+
+function roleHeader(role){
+  if (role === "study") return "Study";
+  if (role === "result") return "Result";
+  if (role === "outcome") return "Outcome";
+  if (role === "timepoint") return "Timepoint";
+  if (role === "effect") return "Effect";
+  if (role === "overall") return "Overall";
+  if (role === "weight") return "Weight";
+  if (role === "direction") return "Direction";
+  if (role.indexOf("d") === 0 && role.length === 2) return tool().domains[parseInt(role.slice(1),10)].code;
+  return role;
+}
+
+function domOptions(val){
+  var selected = val || "x";
+  var html = "";
+  var list = tool().judgements;
+  for (var i=0;i<list.length;i++){
+    var code = list[i];
+    var sel = selected === code ? " selected" : "";
+    html += "<option value=\"" + code + "\"" + sel + ">" + jinfo(code).label + "</option>";
+  }
+  return html;
+}
+
+function labelFor(code, overall){
+  if (overall && STATE.tool === "ROBINS-I v2" && code === "l") return "Low risk of bias except for concerns about uncontrolled confounding";
+  return jinfo(code).label;
+}
+
+function ovOptions(val, autoVal, markAuto){
+  var html = "";
+  var selected = val || "x";
+  var list = tool().judgements;
+  for (var i=0;i<list.length;i++){
+    var code = list[i];
+    var sel = selected === code ? " selected" : "";
+    html += "<option value=\"" + code + "\"" + sel + ">" + labelFor(code, true) + (markAuto && code === autoVal && selected === code ? " (auto)" : "") + "</option>";
+  }
+  return html;
+}
+
+function dirOptions(val){
+  var html = "<option value=\"\">—</option>";
+  for (var i=1;i<DIRLIST.length;i++){
+    var code = DIRLIST[i];
+    html += "<option value=\"" + code + "\"" + (val === code ? " selected" : "") + ">" + DIRLABEL[code] + "</option>";
+  }
+  return html;
+}
+
+function renderTraffic(){
+  var host = document.getElementById("figTf");
+  var rs = displayRows();
+  if (!rs.length){
+    host.innerHTML = "<div class=\"placeholder empty-guide\"><h3>Start your risk-of-bias figure</h3><p>Use the offline workflow in three steps:</p><ol><li>Load the example or import your CSV.</li><li>Review judgements in the Data table.</li><li>Export PNG, SVG, or a complete package.</li></ol><button class=\"btn primary\" data-example=\"1\">Load example data</button> <button class=\"btn\" data-focus-import=\"1\">Import CSV</button></div>";
+    return;
+  }
+  host.innerHTML = trafficSVG(rs, STATE.tool);
+}
+
+function svgDefs(zUsed){
+  if (!zUsed) return "";
+  return "<defs><pattern id=\"hatch\" patternUnits=\"userSpaceOnUse\" width=\"6\" height=\"6\" patternTransform=\"rotate(45)\"><rect width=\"6\" height=\"6\" fill=\"#e6e6e6\"/><line x1=\"0\" y1=\"0\" x2=\"0\" y2=\"6\" stroke=\"#b0b0b0\" stroke-width=\"1.4\"/></pattern></defs>";
+}
+
+function fillFor(code, zUsed){
+  return (code === "z" && zUsed) ? "url(#hatch)" : colourOf(code);
+}
+
+function trafficSVG(rs, t){
+  var nDom = tool().domains.length;
+  var splitD1 = STATE.tool === "ROBINS-I v2" && STATE.ui.splitD1;
+  var nDomainCols = nDom + (splitD1 ? 1 : 0);
+  var showOverall = STATE.opts.overall;
+  var nCols = nDomainCols + (showOverall ? 1 : 0);
+  var fs = Number(STATE.ui.font) || 1;
+  var psize = Number(STATE.ui.psize) || 10;
+  var fullLabels = STATE.ui.domainLabels === "full";
+
+  var colW = 74 * (0.9 + fs * 0.1), rowH = 36, rowGap = 6, padL = 24;
+  var fsLabel = 12.5 * fs, fsAxis = 12 * fs, fsLegend = 11 * fs, fsCap = 11 * fs;
+
+  var maxLabel = 0;
+  for (var i=0;i<rs.length;i++) maxLabel = Math.max(maxLabel, rowLabel(rs[i]).length);
+  var labelW = Math.min(420, Math.max(70, maxLabel * 6.1 + 16));
+  var marginL = padL + labelW + 70;
+
+  var titleH = 0;
+  if (STATE.ui.title) titleH += 18;
+  if (STATE.ui.subtitle) titleH += 16;
+  var marginT = 74 + titleH + (fullLabels ? 40 : 0);
+  var plotH = rs.length * (rowH + rowGap) - rowGap;
+  var W = marginL + nCols * colW + 30;
+
+  var legendEntries = presentJudgements(rs);
+  var zUsed = legendEntries.indexOf("z") !== -1;
+  var legendH = STATE.ui.legend ? 30 + legendEntries.length * 21 + 10 : 0;
+  var legendW = 176;
+  var legendLeft = W - 24 - legendW + 4;
+  var capWrapW = Math.max(120, legendLeft - marginL - 20);
+  var capLines = STATE.ui.caption ? wrapText(tool().caption, Math.max(20, Math.floor(capWrapW / 5.8))) : [];
+  var capH = capLines.length * 15 * fs + 6;
+  var footLines = STATE.ui.footnote ? wrapText(STATE.ui.footnote, Math.max(20, Math.floor(capWrapW / 5.8))) : [];
+  var footH = footLines.length * 14 * fs;
+  var bottomH = Math.max(legendH, capH + footH + 20) + 18;
+
+  var H = marginT + plotH + bottomH;
+
+  var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + W + "\" height=\"" + H + "\" font-family=\"" + fontFamilyCss() + "\">";
+  svg += svgDefs(zUsed);
+  svg += "<rect x=\"0\" y=\"0\" width=\"" + W + "\" height=\"" + H + "\" fill=\"#ffffff\"/>";
+
+  if (STATE.ui.title){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"" + 22 + "\" text-anchor=\"middle\" font-size=\"" + (15 * fs) + "\" font-weight=\"bold\" fill=\"#000\">" + esc(STATE.ui.title) + "</text>";
+  }
+  if (STATE.ui.subtitle){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"" + (22 + (STATE.ui.title ? 18 : 0)) + "\" text-anchor=\"middle\" font-size=\"" + (11.5 * fs) + "\" fill=\"#444\">" + esc(STATE.ui.subtitle) + "</text>";
+  }
+
+  var plotX0 = marginL;
+  var plotY0 = marginT;
+
+  for (var c=0;c<nCols;c++){
+    var x = plotX0 + c * colW;
+    var isOv = showOverall && c === nCols - 1;
+    svg += "<rect x=\"" + x + "\" y=\"" + plotY0 + "\" width=\"" + colW + "\" height=\"" + plotH + "\" fill=\"" + (isOv ? "#d3d3d3" : "#ffffff") + "\" stroke=\"#c0c0c0\" stroke-width=\"0.6\"/>";
+  }
+  for (var r=0;r<rs.length;r++){
+    var y = plotY0 + r * (rowH + rowGap);
+    svg += "<line x1=\"" + plotX0 + "\" y1=\"" + y + "\" x2=\"" + (plotX0 + nCols * colW) + "\" y2=\"" + y + "\" stroke=\"#c0c0c0\" stroke-width=\"0.6\"/>";
+    svg += "<text x=\"" + (plotX0 - 12) + "\" y=\"" + (y + rowH / 2 + 4) + "\" text-anchor=\"end\" font-size=\"" + fsLabel + "\" fill=\"#000\">" + esc(rowLabel(rs[r])) + "</text>";
+  }
+  var axisX = Math.max(16, plotX0 - labelW - 24);
+  var axisY = plotY0 + plotH / 2;
+  svg += "<text x=\"" + axisX + "\" y=\"" + axisY + "\" text-anchor=\"middle\" font-size=\"" + (12 * fs) + "\" fill=\"#000\" transform=\"rotate(-90 " + axisX + "," + axisY + ")\">" + esc("Study / result") + "</text>";
+
+  svg += "<text x=\"" + (plotX0 + nCols * colW / 2) + "\" y=\"" + (28 + titleH) + "\" text-anchor=\"middle\" font-size=\"" + (13 * fs) + "\" font-weight=\"bold\" fill=\"#000\">Risk of bias domains</text>";
+
+  var domainColumnName = function(ci){
+    if (splitD1){
+      if (ci === 0) return "D1 (A)";
+      if (ci === 1) return "D1 (B)";
+      return tool().domains[ci - 1].name;
+    }
+    return tool().domains[ci].name;
+  };
+  var domainColumnCode = function(ci){
+    if (splitD1){
+      if (ci === 0) return "D1 (A)";
+      if (ci === 1) return "D1 (B)";
+      return tool().domains[ci - 1].code;
+    }
+    return tool().domains[ci].code;
+  };
+
+  for (var c2=0;c2<nCols;c2++){
+    var x2 = plotX0 + c2 * colW;
+    var isOv = showOverall && c2 === nCols - 1;
+    if (isOv){
+      svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + 52 + "\" text-anchor=\"middle\" font-size=\"" + fsAxis + "\" fill=\"#000\">Overall</text>";
+    } else if (fullLabels){
+      var nameLines = wrapText(domainColumnName(c2), 11).slice(0, 3);
+      for (var nl=0;nl<nameLines.length;nl++){
+        svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + (56 + nl * 11) + "\" text-anchor=\"middle\" font-size=\"" + (8.6 * fs) + "\" fill=\"#000\">" + esc(nameLines[nl]) + "</text>";
+      }
+    } else {
+      svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + 52 + "\" text-anchor=\"middle\" font-size=\"" + fsAxis + "\" fill=\"#000\">" + esc(domainColumnCode(c2)) + "</text>";
+    }
+  }
+
+  var cellCode = function(row, ci){
+    if (showOverall && ci === nCols - 1) return row.overall || "x";
+    if (splitD1){
+      if (ci === 0) return row.d1variant === "B" ? "x" : (row.d[0] || "x");
+      if (ci === 1) return row.d1variant === "B" ? (row.d[0] || "x") : "x";
+      return row.d[ci - 1] || "x";
+    }
+    return row.d[ci] || "x";
+  };
+
+  for (var r2=0;r2<rs.length;r2++){
+    var row = rs[r2];
+    for (var c3=0;c3<nCols;c3++){
+      var code = cellCode(row, c3);
+      var cx = plotX0 + c3 * colW + colW / 2;
+      var cy = plotY0 + r2 * (rowH + rowGap) + rowH / 2;
+      var rad = Math.min(20, Math.max(8, psize * 1.3));
+      svg += "<circle cx=\"" + cx + "\" cy=\"" + cy + "\" r=\"" + rad + "\" fill=\"" + fillFor(code, zUsed) + "\" stroke=\"#000\" stroke-width=\"1\"/>";
+      if (jinfo(code).glyph){
+        svg += "<text x=\"" + cx + "\" y=\"" + (cy + 5.5) + "\" text-anchor=\"middle\" font-size=\"" + (rad * 1.25 * fs) + "\" font-weight=\"bold\" fill=\"#fff\">" + jinfo(code).glyph + "</text>";
+      }
+      if (showOverall && c3 === nCols - 1 && row.dirOverall){
+        svg += "<text x=\"" + (cx + rad + 9) + "\" y=\"" + (cy + 4) + "\" text-anchor=\"middle\" font-size=\"" + (11 * fs) + "\" fill=\"#000\">" + DIRGLYPH[row.dirOverall] + "</text>";
+      }
+    }
+  }
+
+  if (STATE.ui.legend){
+    var legendX = W - 24;
+    var legendY0 = plotY0 + plotH + 24;
+    svg += "<rect x=\"" + (legendX - legendW + 4) + "\" y=\"" + legendY0 + "\" width=\"" + (legendW - 4) + "\" height=\"" + (legendEntries.length * 21 + 34) + "\" fill=\"#ffffff\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+    svg += "<text x=\"" + (legendX - legendW + 14) + "\" y=\"" + (legendY0 + 16) + "\" font-size=\"" + (12 * fs) + "\" font-weight=\"bold\" fill=\"#000\">Judgement</text>";
+    for (var e=0;e<legendEntries.length;e++){
+      var code = legendEntries[e];
+      var ly = legendY0 + 36 + e * 21;
+      svg += "<circle cx=\"" + (legendX - legendW + 24) + "\" cy=\"" + (ly - 4) + "\" r=\"8\" fill=\"" + fillFor(code, zUsed) + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+      if (jinfo(code).glyph){
+        svg += "<text x=\"" + (legendX - legendW + 24) + "\" y=\"" + (ly - 0.5) + "\" text-anchor=\"middle\" font-size=\"" + (9.5 * fs) + "\" font-weight=\"bold\" fill=\"#fff\">" + jinfo(code).glyph + "</text>";
+      }
+      svg += "<text x=\"" + (legendX - legendW + 42) + "\" y=\"" + ly + "\" font-size=\"" + fsLegend + "\" fill=\"#000\">" + jinfo(code).short + "</text>";
+    }
+  }
+
+  var capX = plotX0;
+  var capY = plotY0 + plotH + 20;
+  for (var l=0;l<capLines.length;l++){
+    svg += "<text x=\"" + capX + "\" y=\"" + capY + "\" font-size=\"" + fsCap + "\" fill=\"#000\">" + esc(capLines[l]) + "</text>";
+    capY += 15 * fs;
+  }
+  for (var f=0;f<footLines.length;f++){
+    svg += "<text x=\"" + capX + "\" y=\"" + (capY + 8) + "\" font-size=\"" + (10.5 * fs) + "\" fill=\"#555\">" + esc(footLines[f]) + "</text>";
+    capY += 14 * fs;
+  }
+
+  svg += "</svg>";
+  return svg;
+}
+
+function presentJudgements(rs){
+  var present = {};
+  for (var i=0;i<rs.length;i++){
+    for (var j=0;j<rs[i].d.length;j++) present[rs[i].d[j] || "x"] = true;
+    if (rs[i].overall) present[rs[i].overall] = true;
+  }
+  var out = [];
+  var order = tool().legendOrder;
+  for (var o=0;o<order.length;o++) if (present[order[o]]) out.push(order[o]);
+  for (var k=0;k<order.length;k++) delete present[order[k]];
+  for (var p in present) out.push(p);
+  return out;
+}
+
+function renderBar(){
+  var host = document.getElementById("figBar");
+  var rs = displayRows();
+  if (!rs.length){
+    host.innerHTML = "<div class=\"placeholder empty-guide\"><h3>Weighted bar plot</h3><p>Import data to compare the distribution of judgements across domains.</p><button class=\"btn primary\" data-example=\"1\">Load example data</button></div>";
+    return;
+  }
+  host.innerHTML = barSVG(rs, STATE.tool);
+}
+
+function rowsHaveWeights(rs){
+  for (var i=0;i<rs.length;i++) if (rs[i].weight !== 1) return true;
+  return false;
+}
+
+function barSVG(rs, t){
+  var nDom = tool().domains.length;
+  var showOverall = STATE.opts.overall;
+  var weighted = STATE.opts.weighted && rowsHaveWeights(rs);
+  if (weighted && !rs.some(function(r){ return isFinite(Number(r.weight)) && Number(r.weight) > 0; })) weighted = false;
+  var fs = Number(STATE.ui.font) || 1;
+
+  var names = tool().domains.map(function(d){ return d.name; });
+  if (showOverall) names.push("Overall risk of bias");
+
+  var fsName = 11.5 * fs;
+  var maxName = 0;
+  for (var i=0;i<names.length;i++) maxName = Math.max(maxName, names[i].length);
+  var marginL = Math.max(230, maxName * 6.1 + 30);
+  var plotW = 560;
+  var marginR = 74;
+  var marginT = 40;
+  var barH = 26, barGap = 15;
+
+  var legendEntries = presentJudgements(rs);
+  var zUsed = legendEntries.indexOf("z") !== -1;
+  var defaultNote = t === "ROBINS-I v2" ? "Overall Low means Low risk of bias except for concerns about uncontrolled confounding." : "";
+  var footnote = STATE.ui.footnote ? STATE.ui.footnote : defaultNote;
+  var showLegend = STATE.ui.legend;
+  var legendH = (showLegend ? 36 + (legendEntries.length > 3 ? Math.ceil(legendEntries.length / 4) : 1) * 20 : 0) + (footnote ? 22 : 0);
+
+  var titleH = 0;
+  if (STATE.ui.title) titleH += 18;
+  if (STATE.ui.subtitle) titleH += 16;
+  var marginT = 40 + titleH;
+  var W = marginL + plotW + marginR;
+  var H = marginT + names.length * (barH + barGap) + legendH + 12;
+
+  var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + W + "\" height=\"" + H + "\" font-family=\"" + fontFamilyCss() + "\">";
+  svg += svgDefs(zUsed);
+  svg += "<rect x=\"0\" y=\"0\" width=\"" + W + "\" height=\"" + H + "\" fill=\"#ffffff\"/>";
+
+  if (STATE.ui.title){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"" + 22 + "\" text-anchor=\"middle\" font-size=\"" + (15 * fs) + "\" font-weight=\"bold\" fill=\"#000\">" + esc(STATE.ui.title) + "</text>";
+  }
+  if (STATE.ui.subtitle){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"" + (22 + (STATE.ui.title ? 18 : 0)) + "\" text-anchor=\"middle\" font-size=\"" + (11.5 * fs) + "\" fill=\"#444\">" + esc(STATE.ui.subtitle) + "</text>";
+  }
+
+  var plotX0 = marginL, plotY0 = marginT;
+  var plotH = names.length * (barH + barGap);
+
+  var stackOrder = tool().stack;
+  for (var b=0;b<names.length;b++){
+    var y = plotY0 + (names.length - 1 - b) * (barH + barGap);
+    var isOverall = showOverall && b === names.length - 1;
+    var codes = isOverall ? rs.map(function(r){ return r.overall || "x"; }) : rs.map(function(r){ return r.d[b] || "x"; });
+    var sums = {};
+    var total = 0;
+    for (var s=0;s<stackOrder.length;s++) sums[stackOrder[s]] = 0;
+    for (var r=0;r<rs.length;r++){
+      var code = codes[r];
+      if (!(code in sums)) sums[code] = 0;
+      var w = weighted ? Math.max(0, Number(rs[r].weight) || 0) : 1;
+      sums[code] += w;
+      total += w;
+    }
+    var xPos = plotX0;
+    for (var s2=0;s2<stackOrder.length;s2++){
+      var code = stackOrder[s2];
+      var segW = total > 0 ? sums[code] / total * plotW : 0;
+      if (segW > 0.5){
+        svg += "<rect x=\"" + xPos + "\" y=\"" + y + "\" width=\"" + segW + "\" height=\"" + barH + "\" fill=\"" + fillFor(code, zUsed) + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+        if (STATE.ui.barPct && segW > 30){
+          var pct = Math.round(sums[code] / total * 100);
+          svg += "<text x=\"" + (xPos + segW / 2) + "\" y=\"" + (y + barH / 2 + 4) + "\" text-anchor=\"middle\" font-size=\"" + (10 * fs) + "\" fill=\"#000\">" + pct + "%</text>";
+        }
+        xPos += segW;
+      }
+    }
+    var bold = isOverall ? " font-weight=\"bold\"" : "";
+    svg += "<text x=\"" + (plotX0 - 12) + "\" y=\"" + (y + barH / 2 + 4) + "\" text-anchor=\"end\" font-size=\"" + fsName + "\" fill=\"#000\"" + bold + ">" + esc(names[b]) + "</text>";
+  }
+
+  svg += "<text x=\"" + (plotX0 + plotW / 2) + "\" y=\"" + (26 + titleH) + "\" text-anchor=\"middle\" font-size=\"" + (13 * fs) + "\" font-weight=\"bold\" fill=\"#000\">" + (weighted ? "Weighted " : "") + "Risk of bias</text>";
+  for (var g=0;g<=4;g++){
+    var gx = plotX0 + g * plotW / 4;
+    var pct = g * 25;
+    svg += "<line x1=\"" + gx + "\" y1=\"" + plotY0 + "\" x2=\"" + gx + "\" y2=\"" + (plotY0 + plotH) + "\" stroke=\"#e0e0e0\" stroke-width=\"0.7\"/>";
+    svg += "<text x=\"" + gx + "\" y=\"" + (plotY0 + plotH + 16) + "\" text-anchor=\"middle\" font-size=\"" + (10.5 * fs) + "\" fill=\"#000\">" + pct + "%</text>";
+  }
+
+  var ly0 = plotY0 + plotH + 34;
+  var legendRows = showLegend ? (legendEntries.length > 3 ? Math.ceil(legendEntries.length / 4) : 1) : 0;
+  if (showLegend){
+    var cols = 4, cw = plotW / cols;
+    svg += "<text x=\"" + plotX0 + "\" y=\"" + (ly0 - 4) + "\" font-size=\"" + (12 * fs) + "\" font-weight=\"bold\" fill=\"#000\">Risk of Bias</text>";
+    for (var e=0;e<legendEntries.length;e++){
+      var code = legendEntries[e];
+      var col = e % cols, rowIx = Math.floor(e / cols);
+      var lx = plotX0 + col * cw;
+      var ly = ly0 + 14 + rowIx * 20;
+      svg += "<rect x=\"" + lx + "\" y=\"" + (ly - 12) + "\" width=\"14\" height=\"14\" fill=\"" + fillFor(code, zUsed) + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+      svg += "<text x=\"" + (lx + 20) + "\" y=\"" + ly + "\" font-size=\"" + (11 * fs) + "\" fill=\"#000\">" + jinfo(code).short + "</text>";
+    }
+  }
+  if (footnote) svg += "<text x=\"" + plotX0 + "\" y=\"" + (ly0 + 14 + legendRows * 20 + 6) + "\" font-size=\"" + (10 * fs) + "\" fill=\"#000\">* " + esc(footnote) + "</text>";
+
+  svg += "</svg>";
+  return svg;
+}
+
+function computeStats(rs){
+  var nDom = tool().domains.length;
+  var labels = ["Domain"];
+  for (var i=0;i<nDom;i++) labels.push(tool().domains[i].code);
+  labels.push("Overall");
+  var rowsOut = [labels];
+  var stackOrder = tool().stack;
+  for (var s=0;s<stackOrder.length;s++){
+    var line = [jinfo(stackOrder[s]).label];
+    for (var d=0;d<nDom;d++) line.push(pctFor(rs, stackOrder[s], rs.map(function(r){ return r.d[d] || "x"; })));
+    line.push(pctFor(rs, stackOrder[s], rs.map(function(r){ return r.overall || "x"; })));
+    rowsOut.push(line);
+  }
+  var nRow = [rs.length];
+  for (var d2=0;d2<nDom;d2++) nRow.push(rs.length);
+  nRow.push(rs.length);
+  rowsOut.push(["N results"].concat(nRow));
+  return rowsOut;
+}
+
+function pctFor(rs, code, codes){
+  var n = 0;
+  for (var i=0;i<codes.length;i++) if (codes[i] === code) n++;
+  return rs.length ? Math.round(n / rs.length * 100) + "%" : "0%";
+}
+
+function statsCsv(){
+  var stats = computeStats(displayRows());
+  return "\uFEFF" + stats.map(function(line){ return line.join(","); }).join("\r\n");
+}
+
+function figureCaption(){
+  var rs = displayRows();
+  var studies = {};
+  for (var i=0;i<rs.length;i++) studies[rs[i].study] = true;
+  var d = new Date();
+  return "Risk-of-bias assessment using " + tool().name + (STATE.tool === "ROBINS-I v2" ? " (20 November 2025 cribsheet)" : "") + "; " +
+    rs.length + " result" + (rs.length === 1 ? "" : "s") + " across " + Object.keys(studies).length + " stud" + (Object.keys(studies).length === 1 ? "y" : "ies") +
+    ". Generated with Simple Offline Robvis on " + d.toISOString().slice(0,10) + ".";
+}
+
+function svgToString(svgHtml, presetInches){
+  var wrap = document.createElement("div");
+  wrap.innerHTML = svgHtml;
+  var el = wrap.firstChild;
+  el.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  el.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+  var w = parseFloat(el.getAttribute("width")), h = parseFloat(el.getAttribute("height"));
+  if (presetInches && w && h){
+    var tw = presetInches * 96;
+    el.setAttribute("viewBox", "0 0 " + w + " " + h);
+    el.setAttribute("width", Math.round(tw));
+    el.setAttribute("height", Math.round(tw * h / w));
+  }
+  return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + new XMLSerializer().serializeToString(el);
+}
+
+function exportSVG(id, name){
+  var host = document.getElementById(id);
+  var svgEl = host.querySelector("svg");
+  if (!svgEl) return;
+  var inches = Number(STATE.ui.journal) || 0;
+  downloadFile(name + ".svg", new Blob([svgToString(svgEl.outerHTML, inches || null)], {type: "image/svg+xml;charset=utf-8"}));
+}
+
+function pngCrc32(bytes){
+  var crc = 0xffffffff;
+  for (var i=0;i<bytes.length;i++){
+    crc ^= bytes[i];
+    for (var j=0;j<8;j++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data){
+  var typeBytes = new Uint8Array(4);
+  for (var i=0;i<4;i++) typeBytes[i] = type.charCodeAt(i);
+  var crcInput = new Uint8Array(4 + data.length);
+  crcInput.set(typeBytes, 0);
+  crcInput.set(data, 4);
+  var chunk = new Uint8Array(12 + data.length);
+  var view = new DataView(chunk.buffer);
+  view.setUint32(0, data.length);
+  chunk.set(typeBytes, 4);
+  chunk.set(data, 8);
+  view.setUint32(8 + data.length, pngCrc32(crcInput));
+  return chunk;
+}
+
+function addPngDpi(blob, dpi, done){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var bytes = new Uint8Array(reader.result);
+      if (bytes.length < 33 || bytes[0] !== 137 || bytes[1] !== 80 || bytes[2] !== 78 || bytes[3] !== 71){ done(blob); return; }
+      var view = new DataView(bytes.buffer), pos = 8, insertAt = -1;
+      while (pos + 12 <= bytes.length){
+        var length = view.getUint32(pos);
+        var type = String.fromCharCode(bytes[pos+4], bytes[pos+5], bytes[pos+6], bytes[pos+7]);
+        if (type === "IHDR"){ insertAt = pos + 12 + length; break; }
+        pos += 12 + length;
+      }
+      if (insertAt < 0){ done(blob); return; }
+      var ppm = Math.max(1, Math.round(Number(dpi) / 0.0254));
+      var data = new Uint8Array(9), dataView = new DataView(data.buffer);
+      dataView.setUint32(0, ppm);
+      dataView.setUint32(4, ppm);
+      data[8] = 1;
+      var chunk = pngChunk("pHYs", data);
+      var out = new Uint8Array(bytes.length + chunk.length);
+      out.set(bytes.slice(0, insertAt), 0);
+      out.set(chunk, insertAt);
+      out.set(bytes.slice(insertAt), insertAt + chunk.length);
+      done(new Blob([out], {type:"image/png"}));
+    }catch(e){ done(blob); }
+  };
+  reader.onerror = function(){ done(blob); };
+  reader.readAsArrayBuffer(blob);
+}
+
+function exportPNG(id, name, dpi){
+  var host = document.getElementById(id);
+  var svgEl = host.querySelector("svg");
+  if (!svgEl) return;
+  var w = parseFloat(svgEl.getAttribute("width")), h = parseFloat(svgEl.getAttribute("height"));
+  if (!w || !h) return;
+  var inches = Number(STATE.ui.journal) || 0;
+  var outW = inches ? Math.round(inches * dpi) : Math.round(w * dpi / 96);
+  var outH = Math.round(outW * h / w);
+  var img = new Image();
+  var url = URL.createObjectURL(new Blob([svgToString(svgEl.outerHTML, null)], {type: "image/svg+xml;charset=utf-8"}));
+  img.onload = function(){
+    var canvas = document.createElement("canvas");
+    canvas.width = outW;
+    canvas.height = outH;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(function(blob){
+      URL.revokeObjectURL(url);
+      if (!blob) return;
+      addPngDpi(blob, dpi, function(finalBlob){ downloadFile(name + "_" + dpi + "dpi.png", finalBlob); });
+    }, "image/png");
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); toast("Could not render PNG in this browser.", "err"); };
+  img.src = url;
+}
+
+function copyPng(id, dpi){
+  var host = document.getElementById(id);
+  var svgEl = host.querySelector("svg");
+  if (!svgEl) return;
+  var w = parseFloat(svgEl.getAttribute("width")), h = parseFloat(svgEl.getAttribute("height"));
+  if (!w || !h) return;
+  var outW = Math.round(w * dpi / 96), outH = Math.round(outW * h / w);
+  var img = new Image();
+  var url = URL.createObjectURL(new Blob([svgToString(svgEl.outerHTML, null)], {type: "image/svg+xml;charset=utf-8"}));
+  img.onload = function(){
+    var canvas = document.createElement("canvas");
+    canvas.width = outW; canvas.height = outH;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(function(blob){
+      if (!blob){ toast("Could not copy figure.", "err"); return; }
+      var item = new ClipboardItem({"image/png": blob});
+      navigator.clipboard.write([item]).then(function(){
+        toast("Figure copied to clipboard — paste into Word or PowerPoint.", "ok");
+      }).catch(function(){
+        toast("Clipboard write failed in this browser; use PNG download instead.", "err");
+      });
+    }, "image/png");
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); toast("Could not render PNG in this browser.", "err"); };
+  img.src = url;
+}
+
+function copyText(text){
+  var done = function(){ toast("Copied to clipboard.", "ok"); };
+  var fail = function(){ toast("Clipboard unavailable in this browser.", "err"); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, fail);
+  } else {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand("copy"); done(); }catch(e){ fail(); }
+    ta.remove();
+  }
+}
+
+function figureName(prefix){
+  return prefix + "_" + safeName(tool().name);
+}
+
+function save(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+  }catch(e){}
+}
+
+function normalizeStoredRows(input, key){
+  if (!Array.isArray(input)) return [];
+  var config = TOOLS[key];
+  return input.map(function(source){
+    var row = source || {}, domains = Array.isArray(row.d) ? row.d.slice(0, config.domains.length) : [];
+    while (domains.length < config.domains.length) domains.push("x");
+    domains = domains.map(function(code){ return config.judgements.indexOf(code) !== -1 ? code : "x"; });
+    var overall = row.overall === "" ? "" : (config.judgements.indexOf(row.overall) !== -1 ? row.overall : "x");
+    var weight = Number(row.weight);
+    var hasDomainJudgement = domains.some(function(code){ return code !== "x" && code !== "z"; });
+    var preserveOverall = row.override === true || (overall !== "" && hasDomainJudgement);
+    var dirs = Array.isArray(row.dir) ? row.dir.slice(0, config.domains.length) : [];
+    while (dirs.length < config.domains.length) dirs.push("");
+    dirs = dirs.map(function(d){ return DIRLIST.indexOf(d) !== -1 ? d : ""; });
+    return {
+      study: String(row.study != null ? row.study : (row.label || "")),
+      result: String(row.result || ""),
+      outcome: String(row.outcome || ""),
+      timepoint: String(row.timepoint || ""),
+      effect: String(row.effect || ""),
+      notes: String(row.notes || ""),
+      d: domains,
+      d1variant: row.d1variant === "B" ? "B" : (row.d1variant === "A" ? "A" : ""),
+      dir: dirs,
+      dirOverall: DIRLIST.indexOf(row.dirOverall) !== -1 ? row.dirOverall : "",
+      overall: preserveOverall ? overall : "",
+      override: preserveOverall,
+      weight: isFinite(weight) && weight >= 0 ? weight : 1
+    };
+  });
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if (!raw) raw = localStorage.getItem(LEGACY_KEY);
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    if (s && s.rows){
+      STATE.tool = TOOLS[s.tool] ? s.tool : "ROB2";
+      Object.keys(STATE.rows).forEach(function(k){
+        if (Array.isArray(s.rows[k])) STATE.rows[k] = normalizeStoredRows(s.rows[k], k);
+      });
+      if (s.opts){
+        if (typeof s.opts.auto === "boolean") STATE.opts.auto = s.opts.auto;
+        if (typeof s.opts.overall === "boolean") STATE.opts.overall = s.opts.overall;
+        if (typeof s.opts.weighted === "boolean") STATE.opts.weighted = s.opts.weighted;
+        if (s.opts.colour) STATE.opts.colour = s.opts.colour;
+      }
+      if (s.ui){
+        if (s.ui.label) STATE.ui.label = s.ui.label;
+        if (s.ui.font) STATE.ui.font = s.ui.font;
+        if (s.ui.fontFamily) STATE.ui.fontFamily = s.ui.fontFamily;
+        if (s.ui.journal) STATE.ui.journal = s.ui.journal;
+        if (typeof s.ui.splitD1 === "boolean") STATE.ui.splitD1 = s.ui.splitD1;
+        if (s.ui.cols) for (var c in STATE.ui.cols) if (typeof s.ui.cols[c] === "boolean") STATE.ui.cols[c] = s.ui.cols[c];
+        if (typeof s.ui.groupBy === "boolean") STATE.ui.groupBy = s.ui.groupBy;
+        if (s.ui.sortBy) STATE.ui.sortBy = s.ui.sortBy;
+        if (s.ui.collapsed) STATE.ui.collapsed = s.ui.collapsed;
+        if (s.ui.tab) STATE.ui.tab = s.ui.tab;
+        if (typeof s.ui.title === "string") STATE.ui.title = s.ui.title;
+        if (typeof s.ui.subtitle === "string") STATE.ui.subtitle = s.ui.subtitle;
+        if (typeof s.ui.footnote === "string") STATE.ui.footnote = s.ui.footnote;
+        if (s.ui.palette && typeof s.ui.palette === "object") STATE.ui.palette = s.ui.palette;
+        if (s.ui.psize) STATE.ui.psize = s.ui.psize;
+        if (typeof s.ui.barPct === "boolean") STATE.ui.barPct = s.ui.barPct;
+        if (typeof s.ui.legend === "boolean") STATE.ui.legend = s.ui.legend;
+        if (typeof s.ui.caption === "boolean") STATE.ui.caption = s.ui.caption;
+        if (s.ui.domainLabels) STATE.ui.domainLabels = s.ui.domainLabels;
+      }
+    }
+  }catch(e){}
+}
+
+var stateWarns = null;
+
+function toast(msg, kind){
+  var host = document.getElementById("toasts");
+  var d = document.createElement("div");
+  d.className = "toast " + (kind || "ok");
+  d.textContent = msg;
+  host.appendChild(d);
+  requestAnimationFrame(function(){ d.classList.add("show"); });
+  setTimeout(function(){ d.classList.remove("show"); setTimeout(function(){ d.remove(); }, 250); }, 4200);
+}
+
+function applyStateToUi(){
+  document.getElementById("tool").value = STATE.tool;
+  document.getElementById("optAuto").checked = STATE.opts.auto;
+  document.getElementById("optOverall").checked = STATE.opts.overall;
+  document.getElementById("optWeighted").checked = STATE.opts.weighted;
+  document.getElementById("optColour").value = STATE.opts.colour;
+  document.getElementById("optLabel").value = STATE.ui.label;
+  document.getElementById("optFont").value = String(STATE.ui.font);
+  document.getElementById("optFontFamily").value = STATE.ui.fontFamily || "Helvetica";
+  document.getElementById("optJournal").value = String(STATE.ui.journal);
+  document.getElementById("optPsize").value = String(STATE.ui.psize || 10);
+  document.getElementById("psizeVal").textContent = String(STATE.ui.psize || 10);
+  document.getElementById("optDomLabels").value = STATE.ui.domainLabels || "short";
+  document.getElementById("optBarPct").checked = STATE.ui.barPct !== false;
+  document.getElementById("optLegend").checked = STATE.ui.legend !== false;
+  document.getElementById("optCaption").checked = STATE.ui.caption !== false;
+  document.getElementById("optTitle").value = STATE.ui.title || "";
+  document.getElementById("optSubtitle").value = STATE.ui.subtitle || "";
+  document.getElementById("optFootnote").value = STATE.ui.footnote || "";
+  document.getElementById("optSplitD1").checked = STATE.ui.splitD1;
+  document.getElementById("optSplitD1").disabled = STATE.tool !== "ROBINS-I v2";
+  document.getElementById("colResult").checked = STATE.ui.cols.result;
+  document.getElementById("colOutcome").checked = STATE.ui.cols.outcome;
+  document.getElementById("colTimepoint").checked = STATE.ui.cols.timepoint;
+  document.getElementById("colEffect").checked = STATE.ui.cols.effect;
+  document.getElementById("colDirection").checked = STATE.ui.cols.direction;
+  document.getElementById("colWeight").checked = STATE.ui.cols.weight;
+  document.getElementById("optGroup").checked = STATE.ui.groupBy;
+  document.getElementById("sortSel").value = STATE.ui.sortBy;
+  document.getElementById("searchBox").value = STATE.ui.query;
+  document.getElementById("optWeighted").disabled = !rowsHaveWeights(rows());
+  renderColorPickers();
+  activateTab(STATE.ui.tab || "tf");
+}
+
+function renderColorPickers(){
+  var host = document.getElementById("colorPickers");
+  if (!host) return;
+  var list = tool().judgements;
+  var html = "";
+  for (var i=0;i<list.length;i++){
+    var code = list[i];
+    html += "<label title=\"" + jinfo(code).label + "\"><span style=\"flex:1\">" + jinfo(code).short + "</span><input type=\"color\" data-code=\"" + code + "\" value=\"" + colourOf(code) + "\"></label>";
+  }
+  html += "<button class=\"btn\" id=\"btnColorReset\">Reset to Cochrane</button>";
+  host.innerHTML = html;
+}
+
+function activateTab(tab){
+  var tabButtons = document.querySelectorAll(".tabs button");
+  for (var i=0;i<tabButtons.length;i++){
+    tabButtons[i].classList.toggle("active", tabButtons[i].dataset.tab === tab);
+    tabButtons[i].setAttribute("aria-selected", tabButtons[i].dataset.tab === tab ? "true" : "false");
+    tabButtons[i].setAttribute("tabindex", tabButtons[i].dataset.tab === tab ? "0" : "-1");
+  }
+  document.getElementById("tab-tf").classList.toggle("active", tab === "tf");
+  document.getElementById("tab-bar").classList.toggle("active", tab === "bar");
+  document.getElementById("tab-table").classList.toggle("active", tab === "table");
+}
+
+function updateFilterSelects(){
+  var rs = rows();
+  var outcomes = {}, timepoints = {};
+  for (var i=0;i<rs.length;i++){
+    if (rs[i].outcome) outcomes[rs[i].outcome] = true;
+    if (rs[i].timepoint) timepoints[rs[i].timepoint] = true;
+  }
+  var oSel = document.getElementById("filterOutcome");
+  var currentO = oSel.value;
+  var oh = "<option value=\"\">All outcomes</option>";
+  Object.keys(outcomes).sort().forEach(function(o){ oh += "<option value=\"" + esc(o) + "\"" + (o === currentO ? " selected" : "") + ">" + esc(o) + "</option>"; });
+  oSel.innerHTML = oh;
+  var tSel = document.getElementById("filterTimepoint");
+  var currentT = tSel.value;
+  var th = "<option value=\"\">All timepoints</option>";
+  Object.keys(timepoints).sort().forEach(function(t){ th += "<option value=\"" + esc(t) + "\"" + (t === currentT ? " selected" : "") + ">" + esc(t) + "</option>"; });
+  tSel.innerHTML = th;
+  document.getElementById("btnUndo").disabled = historyPos <= 0;
+  document.getElementById("btnRedo").disabled = historyPos >= historyStack.length - 1;
+  document.getElementById("btnUndo").textContent = historyPos > 0 ? "↩ Undo (" + historyPos + ")" : "↩ Undo";
+  document.getElementById("btnRedo").textContent = historyPos < historyStack.length - 1 ? "↪ Redo (" + (historyStack.length - 1 - historyPos) + ")" : "↪ Redo";
+}
+
+function renderBulkBar(){
+  var sel = document.querySelectorAll("#grid .chk:checked");
+  var bar = document.getElementById("bulkbar");
+  document.getElementById("bulkCount").textContent = sel.length + " selected";
+  bar.classList.toggle("visible", sel.length > 0);
+}
+
+function selectedIndices(){
+  var out = [];
+  document.querySelectorAll("#grid .chk:checked").forEach(function(cb){
+    out.push(parseInt(cb.dataset.idx, 10));
+  });
+  return out;
+}
+
+function bulkFillDomOptions(){
+  var html = "";
+  for (var i=0;i<tool().domains.length;i++) html += "<option value=\"" + i + "\">" + tool().domains[i].code + "</option>";
+  return html;
+}
+
+function bulkJudgOptions(){
+  var html = "";
+  var list = tool().judgements;
+  for (var i=0;i<list.length;i++) html += "<option value=\"" + list[i] + "\">" + jinfo(list[i]).label + "</option>";
+  return html;
+}
+
+function wizardOpen(text){
+  var grid = parseCSV(text);
+  if (!grid.length){ toast("No data found in the pasted text.", "err"); return; }
+  var header = isHeaderRow(grid[0]) ? grid.shift() : null;
+  var spec = detectSpec(header, STATE.tool);
+  spec.splitId = document.getElementById("wizSplitId").checked;
+  wizState = { text: text, grid: grid, header: header, spec: spec, fixes: {} };
+  wizRenderMap();
+  document.getElementById("wizStep1").style.display = "";
+  document.getElementById("wizStep2").style.display = "none";
+  document.getElementById("wizNext").style.display = "";
+  document.getElementById("wizApply").style.display = "none";
+  document.getElementById("wizBack").style.display = "none";
+  document.getElementById("wizard").classList.add("visible");
+}
+
+var wizState = null;
+
+function wizMapOptions(colName, isDomainFormCol){
+  var opts = [
+    {v:"ignore", l:"— ignore —"},
+    {v:"study", l:"Study"},
+    {v:"result", l:"Result / assessment_id"},
+    {v:"outcome", l:"Outcome"},
+    {v:"timepoint", l:"Timepoint"},
+    {v:"effect", l:"Effect"},
+    {v:"variant", l:"D1 variant (A/B)"},
+    {v:"direction", l:"Direction of bias (overall)"},
+    {v:"overall", l:"Overall"},
+    {v:"weight", l:"Weight"}
+  ];
+  for (var i=0;i<tool().domains.length;i++) opts.push({v:"d" + (i+1), l:tool().domains[i].code + " — " + tool().domains[i].name});
+  opts.push({v:"d1a", l:"D1 variant A only"}, {v:"d1b", l:"D1 variant B only"});
+  if (isDomainFormCol) opts.push({v:"domform", l:"Parse domain_judgments (special)"});
+  var html = "";
+  for (var o=0;o<opts.length;o++){
+    html += "<option value=\"" + opts[o].v + "\">" + opts[o].l + "</option>";
+  }
+  return html;
+}
+
+function wizRenderMap(){
+  var w = wizState;
+  var tb = document.getElementById("wizMap").querySelector("tbody");
+  var cols = w.header || w.grid[0].map(function(_, i){ return "Column " + (i + 1); });
+  var html = "";
+  for (var i=0;i<cols.length;i++){
+    var colName = w.header ? w.header[i] : ("Column " + (i + 1));
+    var isDomForm = normalizeHeader(colName) === "domain_judgments" || normalizeHeader(colName) === "domain judgments";
+    var selected = "";
+    if (i === w.spec.study) selected = "study";
+    else if (i === w.spec.result) selected = "result";
+    else if (i === w.spec.outcome) selected = "outcome";
+    else if (i === w.spec.timepoint) selected = "timepoint";
+    else if (i === w.spec.effect) selected = "effect";
+    else if (i === w.spec.variant) selected = "variant";
+    else if (i === w.spec.direction) selected = "direction";
+    else if (i === w.spec.overall) selected = "overall";
+    else if (i === w.spec.weight) selected = "weight";
+    else if (i === w.spec.d1a) selected = "d1a";
+    else if (i === w.spec.d1b) selected = "d1b";
+    else if (i === w.spec.domForm) selected = "domform";
+    else {
+      var matched = null;
+      w.spec.dom.forEach(function(d){ if (d.index === i) matched = "d" + d.number; });
+      w.spec.dirs.forEach(function(d){ if (d.index === i) matched = "dir_d" + d.number; });
+      selected = matched || "ignore";
+    }
+    html += "<tr data-col=\"" + i + "\"><td>" + esc(colName) + "</td><td><select class=\"wmap\">";
+    var optsHtml = wizMapOptions(colName, isDomForm);
+    html += optsHtml.replace(/<option value="([^"]*)"([^>]*)>/, function(m, v, rest){
+      if (v === selected) return "<option value=\"" + v + "\"" + rest + " selected>";
+      return m;
+    });
+    html += "</select></td></tr>";
+  }
+  tb.innerHTML = html;
+  document.getElementById("wizSplitId").checked = w.spec.splitId !== false;
+}
+
+function wizSpecFromMap(){
+  var w = wizState;
+  var selects = document.querySelectorAll("#wizMap select.wmap");
+  var spec = {
+    study:-1, result:-1, outcome:-1, timepoint:-1, effect:-1, variant:-1, direction:-1,
+    overall:-1, weight:-1, dom:[], d1a:-1, d1b:-1, dirs:[], domForm:-1, splitId: w.spec.splitId !== false
+  };
+  selects.forEach(function(sel){
+    var col = parseInt(sel.closest("tr").dataset.col, 10);
+    var v = sel.value;
+    if (v === "ignore") return;
+    if (v === "study") spec.study = col;
+    else if (v === "result") spec.result = col;
+    else if (v === "outcome") spec.outcome = col;
+    else if (v === "timepoint") spec.timepoint = col;
+    else if (v === "effect") spec.effect = col;
+    else if (v === "variant") spec.variant = col;
+    else if (v === "direction") spec.direction = col;
+    else if (v === "overall") spec.overall = col;
+    else if (v === "weight") spec.weight = col;
+    else if (v === "d1a") spec.d1a = col;
+    else if (v === "d1b") spec.d1b = col;
+    else if (v === "domform") spec.domForm = col;
+    else if (v.indexOf("d") === 0 && v.length === 2) spec.dom.push({index:col, number:parseInt(v.slice(1),10)});
+    else if (v.indexOf("dir_d") === 0) spec.dirs.push({index:col, number:parseInt(v.slice(5),10)});
+  });
+  spec.dom.sort(function(a,b){ return a.number - b.number; });
+  return spec;
+}
+
+function wizPreview(){
+  var w = wizState;
+  var spec = wizSpecFromMap();
+  w.spec = spec;
+  w.spec.splitId = document.getElementById("wizSplitId").checked;
+  var text = w.header ? w.header.join(",") + "\n" + w.grid.map(function(r){ return r.join(","); }).join("\n") : w.grid.map(function(r){ return r.join(","); }).join("\n");
+  var res = importData(text, STATE.tool, w.spec);
+  w.preview = res;
+  var host = document.getElementById("wizIssues");
+  var html = "";
+  if (res.error){
+    html = "<div class=\"wiz-issue\"><strong>Error:</strong> " + esc(res.error) + "</div>";
+  }
+  var issueCount = 0;
+  for (var i=0;i<res.warns.length;i++){
+    if (res.warns[i].indexOf("Unrecognised judgement") !== -1 || res.warns[i].indexOf("is not a ROBINS-I") !== -1 || res.warns[i].indexOf("not a standard RoB 2") !== -1){
+      issueCount++;
+    }
+  }
+  if (res.warns.length){
+    html += "<div class=\"warn\"><strong>" + res.warns.length + " warning" + (res.warns.length > 1 ? "s" : "") + (issueCount ? " (" + issueCount + " judgement issue" + (issueCount > 1 ? "s" : "") + ")" : "") + ":</strong><ul>";
+    res.warns.slice(0, 10).forEach(function(warnMsg){ html += "<li>" + esc(warnMsg) + "</li>"; });
+    if (res.warns.length > 10) html += "<li>… and " + (res.warns.length - 10) + " more</li>";
+    html += "</ul></div>";
+  }
+  host.innerHTML = html;
+  if (res.error || !res.rows.length){ wizRenderPreview([]); return; }
+  wizRenderPreview(res.rows);
+}
+
+function wizRenderPreview(rowsPrev){
+  var tb = document.getElementById("wizPrev");
+  var nDom = tool().domains.length;
+  var html = "<thead><tr><th>#</th><th>Label</th>";
+  for (var i=0;i<nDom;i++) html += "<th>" + tool().domains[i].code + "</th>";
+  html += "<th>Overall</th><th>Variant</th></tr></thead><tbody>";
+  var shown = rowsPrev.slice(0, 25);
+  for (var r=0;r<shown.length;r++){
+    var row = shown[r];
+    html += "<tr><td>" + (r + 1) + "</td><td>" + esc(rowLabel(row, "study+result")) + "</td>";
+    for (var j=0;j<nDom;j++){
+      var code = row.d[j] || "x";
+      html += "<td><span style=\"color:" + colourOf(code) + "\">●</span> " + jinfo(code).label + "</td>";
+    }
+    html += "<td>" + (row.overall ? jinfo(row.overall).label : "auto") + "</td><td>" + esc(row.d1variant || "") + "</td></tr>";
+  }
+  if (rowsPrev.length > shown.length) html += "<tr><td colspan=\"" + (nDom + 4) + "\">… showing first " + shown.length + " of " + rowsPrev.length + " rows</td></tr>";
+  html += "</tbody>";
+  tb.innerHTML = html;
+}
+
+function wizApply(){
+  var activeTab = STATE.ui.tab;
+  var w = wizState;
+  if (!w.preview || w.preview.error || !w.preview.rows.length){ toast("Nothing to import.", "err"); return; }
+  pushHistory();
+  setRows(w.preview.rows);
+  stateWarns = w.preview.warns || [];
+  if (w.preview.hasWeights){ STATE.opts.weighted = true; }
+  document.getElementById("wizard").classList.remove("visible");
+  renderAll();
+  applyStateToUi();
+  activateTab(activeTab);
+  toast("Imported " + w.preview.rows.length + " row" + (w.preview.rows.length === 1 ? "" : "s") + (stateWarns.length ? " with " + stateWarns.length + " warning" + (stateWarns.length > 1 ? "s" : "") : "") + ".", stateWarns.length ? "warn" : "ok");
+}
+
+function doImportDirect(text){
+  var activeTab = STATE.ui.tab;
+  var res = importData(text, STATE.tool);
+  stateWarns = res.warns || [];
+  if (res.error){ renderStatus(); toast(res.error, "err"); return; }
+  pushHistory();
+  setRows(res.rows);
+  if (res.hasWeights) STATE.opts.weighted = true;
+  renderAll();
+  applyStateToUi();
+  activateTab(activeTab);
+  toast("Imported " + res.rows.length + " row" + (res.rows.length === 1 ? "" : "s") + ".", "ok");
+}
+
+function pasteIntoGrid(clipText){
+  var active = document.activeElement;
+  var td = active && active.closest ? active.closest("td") : null;
+  if (!td || !document.getElementById("grid").contains(td)) return false;
+  var tr = td.closest("tr");
+  if (!tr || tr.classList.contains("group-row")) return false;
+  var startIndex = parseInt(tr.dataset.idx, 10);
+  if (isNaN(startIndex)) return false;
+  var roles = columnRoles();
+  var colIndex = Array.prototype.indexOf.call(tr.children, td);
+  var cells = parseCSV(clipText);
+  if (!cells.length) return true;
+  var changed = false;
+  pushHistory();
+  var rs = rows();
+  for (var r=0;r<cells.length;r++){
+    var targetRow = startIndex + r;
+    if (targetRow < 0 || targetRow >= rs.length) continue;
+    for (var c=0;c<cells[r].length;c++){
+      var role = roles[colIndex + c];
+      if (!role) continue;
+      var val = cells[r][c];
+      if (role === "study"){ rs[targetRow].study = val.trim(); changed = true; }
+      else if (role === "result"){ rs[targetRow].result = val.trim(); changed = true; }
+      else if (role === "outcome"){ rs[targetRow].outcome = val.trim(); changed = true; }
+      else if (role === "timepoint"){ rs[targetRow].timepoint = val.trim(); changed = true; }
+      else if (role === "effect"){ rs[targetRow].effect = val.trim(); changed = true; }
+      else if (role.indexOf("d") === 0 && role.length === 2){
+        rs[targetRow].d[parseInt(role.slice(1),10)] = codeOf(val, STATE.tool, null, "paste");
+        changed = true;
+      }
+      else if (role === "overall"){ rs[targetRow].overall = codeOf(val, STATE.tool, null, "paste"); rs[targetRow].override = true; changed = true; }
+      else if (role === "weight"){ rs[targetRow].weight = parseWeight(val, null, "paste"); changed = true; }
+      else if (role === "direction"){ rs[targetRow].dirOverall = directionOf(val, null, "paste"); changed = true; }
+    }
+  }
+  if (changed){ refreshAll(); toast("Pasted block into the grid.", "ok"); }
+  return true;
+}
+
+document.getElementById("tool").addEventListener("change", function(){
+  STATE.tool = this.value;
+  applyStateToUi();
+  renderAll();
+  document.getElementById("bulkDom").innerHTML = bulkFillDomOptions();
+  document.getElementById("bulkJudg").innerHTML = bulkJudgOptions();
+});
+
+document.getElementById("optAuto").addEventListener("change", function(){
+  STATE.opts.auto = this.checked;
+  applyStateToUi();
+  renderAll();
+});
+
+document.getElementById("optOverall").addEventListener("change", function(){
+  STATE.opts.overall = this.checked;
+  refreshAll();
+});
+
+document.getElementById("optWeighted").addEventListener("change", function(){
+  STATE.opts.weighted = this.checked;
+  renderBar();
+  save();
+});
+
+document.getElementById("optColour").addEventListener("change", function(){
+  STATE.opts.colour = this.value;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optLabel").addEventListener("change", function(){
+  STATE.ui.label = this.value;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optFont").addEventListener("change", function(){
+  STATE.ui.font = Number(this.value);
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optFontFamily").addEventListener("change", function(){
+  STATE.ui.fontFamily = this.value;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optPsize").addEventListener("input", function(){
+  STATE.ui.psize = Number(this.value);
+  document.getElementById("psizeVal").textContent = this.value;
+  renderTraffic();
+  save();
+});
+
+document.getElementById("optDomLabels").addEventListener("change", function(){
+  STATE.ui.domainLabels = this.value;
+  renderTraffic();
+  save();
+});
+
+document.getElementById("optBarPct").addEventListener("change", function(){
+  STATE.ui.barPct = this.checked;
+  renderBar();
+  save();
+});
+
+document.getElementById("optLegend").addEventListener("change", function(){
+  STATE.ui.legend = this.checked;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optCaption").addEventListener("change", function(){
+  STATE.ui.caption = this.checked;
+  renderTraffic();
+  save();
+});
+
+document.getElementById("optTitle").addEventListener("change", function(){
+  STATE.ui.title = this.value;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optSubtitle").addEventListener("change", function(){
+  STATE.ui.subtitle = this.value;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("optFootnote").addEventListener("change", function(){
+  STATE.ui.footnote = this.value;
+  renderTraffic();
+  renderBar();
+  save();
+});
+
+document.getElementById("colorPickers").addEventListener("change", function(ev){
+  if (ev.target && ev.target.dataset && ev.target.dataset.code){
+    STATE.ui.palette[ev.target.dataset.code] = ev.target.value;
+    renderTraffic();
+    renderBar();
+    save();
+  }
+});
+
+document.getElementById("colorPickers").addEventListener("click", function(ev){
+  if (ev.target && ev.target.id === "btnColorReset"){
+    STATE.ui.palette = {};
+    renderColorPickers();
+    renderTraffic();
+    renderBar();
+    save();
+    toast("Custom colours reset.", "ok");
+  }
+});
+
+document.getElementById("optJournal").addEventListener("change", function(){
+  STATE.ui.journal = this.value;
+  save();
+});
+
+document.getElementById("optSplitD1").addEventListener("change", function(){
+  STATE.ui.splitD1 = this.checked;
+  renderTraffic();
+  save();
+});
+
+["colResult","colOutcome","colTimepoint","colEffect","colDirection","colWeight"].forEach(function(id){
+  document.getElementById(id).addEventListener("change", function(){
+    var field = id.replace("col","").toLowerCase();
+    STATE.ui.cols[field] = this.checked;
+    renderTable();
+    save();
+  });
+});
+
+document.getElementById("optGroup").addEventListener("change", function(){
+  STATE.ui.groupBy = this.checked;
+  renderTable();
+  save();
+});
+
+document.getElementById("sortSel").addEventListener("change", function(){
+  pushHistory();
+  STATE.ui.sortBy = this.value;
+  sortRows();
+  refreshAll();
+});
+
+document.getElementById("searchBox").addEventListener("input", function(){
+  STATE.ui.query = this.value;
+  refreshAll();
+});
+
+document.getElementById("filterOutcome").addEventListener("change", function(){
+  STATE.ui.fOutcome = this.value;
+  refreshAll();
+});
+
+document.getElementById("filterTimepoint").addEventListener("change", function(){
+  STATE.ui.fTimepoint = this.value;
+  refreshAll();
+});
+
+document.getElementById("btnUndo").addEventListener("click", undo);
+document.getElementById("btnRedo").addEventListener("click", redo);
+document.addEventListener("keydown", function(ev){
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z" && !ev.shiftKey){ ev.preventDefault(); undo(); }
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "y"){ ev.preventDefault(); redo(); }
+  if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && ev.key.toLowerCase() === "z"){ ev.preventDefault(); redo(); }
+});
+
+document.addEventListener("click", function(ev){
+  var btn = ev.target.closest("[data-example]");
+  if (btn) document.getElementById("btnExample").click();
+  var importBtn = ev.target.closest("[data-focus-import]");
+  if (importBtn){ document.getElementById("paste").focus(); document.getElementById("paste").scrollIntoView({behavior:"smooth",block:"center"}); }
+});
+
+document.getElementById("btnImport").addEventListener("click", function(){
+  var text = document.getElementById("paste").value;
+  if (!text.trim()){ toast("Paste some CSV data first.", "err"); return; }
+  wizardOpen(text);
+});
+
+document.getElementById("file").addEventListener("change", function(){
+  var f = this.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    document.getElementById("paste").value = reader.result;
+    wizardOpen(reader.result);
+  };
+  reader.readAsText(f);
+  this.value = "";
+});
+
+document.getElementById("btnFile").addEventListener("click", function(){
+  document.getElementById("file").click();
+});
+
+document.getElementById("btnExample").addEventListener("click", function(){
+  var ex = EXAMPLES[STATE.tool];
+  var text = ex.header + "\n" + ex.rows.map(function(r){ return r.join(","); }).join("\n");
+  doImportDirect(text);
+  document.getElementById("paste").value = text;
+});
+
+document.getElementById("btnTemplate").addEventListener("click", function(){
+  var nDom = tool().domains.length;
+  var header = ["Study","Result","Outcome","Timepoint","Effect"];
+  for (var i=0;i<nDom;i++) header.push(tool().domains[i].code);
+  if (STATE.tool === "ROBINS-I v2") header.push("Variant");
+  header.push("Overall","Weight");
+  var lines = [header.join(",")];
+  for (var r=0;r<3;r++) lines.push(new Array(header.length).join(","));
+  downloadFile("robvis_template_" + safeName(tool().name) + ".csv", new Blob(["\uFEFF" + lines.join("\r\n")], {type: "text/csv;charset=utf-8"}));
+});
+
+document.getElementById("btnCsvAll").addEventListener("click", function(){
+  downloadFile("robvis_data_" + safeName(tool().name) + ".csv", new Blob([csvOfRows(rows(), STATE.tool)], {type: "text/csv;charset=utf-8"}));
+});
+
+document.getElementById("btnClear").addEventListener("click", function(){
+  if (!rows().length) return;
+  if (!confirm("Clear all data for " + tool().name + "?")) return;
+  pushHistory();
+  setRows([]);
+  stateWarns = null;
+  renderAll();
+});
+
+document.getElementById("btnReset").addEventListener("click", function(){
+  if (!confirm("Reset the app (clear saved state)?")) return;
+  try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(LEGACY_KEY); }catch(e){}
+  location.reload();
+});
+
+document.getElementById("btnAdd").addEventListener("click", function(){
+  pushHistory();
+  rows().push(blankRow());
+  stateWarns = null;
+  refreshAll();
+});
+
+document.getElementById("btnAddN").addEventListener("click", function(){
+  var n = parseInt(document.getElementById("addN").value, 10);
+  if (!n || n < 1) n = 1;
+  if (n > 50) n = 50;
+  pushHistory();
+  for (var i=0;i<n;i++) rows().push(blankRow());
+  stateWarns = null;
+  refreshAll();
+  toast("Added " + n + " blank row" + (n > 1 ? "s" : "") + ".", "ok");
+});
+
+document.getElementById("grid").addEventListener("input", function(ev){
+  var tr = ev.target.closest("tr");
+  if (!tr || tr.classList.contains("group-row")) return;
+  var row = rows()[parseInt(tr.dataset.idx, 10)];
+  if (!row) return;
+  var field = ev.target.dataset && ev.target.dataset.field;
+  if (field) row[field] = ev.target.value;
+  else if (ev.target.classList.contains("wt")){
+    var v = parseFloat(ev.target.value);
+    row.weight = isNaN(v) ? 1 : Math.max(0, v);
+    ev.target.value = row.weight;
+    document.getElementById("optWeighted").disabled = !rowsHaveWeights(rows());
+    renderBar();
+  }
+  save();
+});
+
+document.getElementById("grid").addEventListener("change", function(ev){
+  var tr = ev.target.closest("tr");
+  if (!tr || tr.classList.contains("group-row")) return;
+  var row = rows()[parseInt(tr.dataset.idx, 10)];
+  if (!row) return;
+  if (ev.target.classList.contains("dom")){
+    pushHistory();
+    row.d[parseInt(ev.target.dataset.col, 10)] = ev.target.value;
+    refreshAll();
+  } else if (ev.target.classList.contains("ov")){
+    pushHistory();
+    row.override = true;
+    row.overall = ev.target.value;
+    refreshAll();
+  } else if (ev.target.classList.contains("dir")){
+    pushHistory();
+    row.dirOverall = ev.target.value;
+    refreshAll();
+  } else if (ev.target.classList.contains("lbl")){
+    pushHistory();
+    if (ev.target.dataset && ev.target.dataset.field) row[ev.target.dataset.field] = ev.target.value;
+    refreshAll();
+  }
+});
+
+document.getElementById("grid").addEventListener("click", function(ev){
+  var note = ev.target.closest(".note");
+  if (note){
+    var noteRow = rows()[parseInt(note.closest("tr").dataset.idx, 10)];
+    if (!noteRow) return;
+    var nextNote = prompt("Note for " + (noteRow.study || "this row") + ":", noteRow.notes || "");
+    if (nextNote === null) return;
+    pushHistory();
+    noteRow.notes = nextNote.trim();
+    refreshAll();
+    return;
+  }
+  var unlock = ev.target.closest("[data-unlock]");
+  if (unlock){
+    var row = rows()[parseInt(unlock.closest("tr").dataset.idx, 10)];
+    if (row) row.override = true;
+    pushHistory();
+    refreshAll();
+    return;
+  }
+  var reset = ev.target.closest("[data-reset]");
+  if (reset){
+    var row2 = rows()[parseInt(reset.closest("tr").dataset.idx, 10)];
+    if (row2){ row2.override = false; row2.overall = ""; }
+    pushHistory();
+    refreshAll();
+    return;
+  }
+  var up = ev.target.closest(".up");
+  if (up){
+    var trUp = up.closest("tr");
+    var idxUp = parseInt(trUp.dataset.idx, 10);
+    if (idxUp > 0){
+      var rs2 = rows();
+      var target = idxUp - 1;
+      if (STATE.ui.groupBy){
+        var prevTr = trUp.previousElementSibling;
+        if (prevTr && !prevTr.classList.contains("group-row") && prevTr.dataset.idx !== undefined){
+          var prevStudy = rs2[parseInt(prevTr.dataset.idx, 10)].study;
+          if (prevStudy !== rs2[idxUp].study) return;
+          target = parseInt(prevTr.dataset.idx, 10);
+        } else return;
+      }
+      pushHistory();
+      var tmp = rs2[idxUp]; rs2[idxUp] = rs2[target]; rs2[target] = tmp;
+      refreshAll();
+    }
+    return;
+  }
+  var down = ev.target.closest(".down");
+  if (down){
+    var trDown = down.closest("tr");
+    var idxDown = parseInt(trDown.dataset.idx, 10);
+    var rs3 = rows();
+    var target2 = idxDown + 1;
+    if (STATE.ui.groupBy){
+      var nextTr = trDown.nextElementSibling;
+      if (nextTr && !nextTr.classList.contains("group-row") && nextTr.dataset.idx !== undefined){
+        var nextStudy = rs3[parseInt(nextTr.dataset.idx, 10)].study;
+        if (nextStudy !== rs3[idxDown].study) return;
+        target2 = parseInt(nextTr.dataset.idx, 10);
+      } else return;
+    }
+    if (target2 < rs3.length){
+      pushHistory();
+      var tmp2 = rs3[idxDown]; rs3[idxDown] = rs3[target2]; rs3[target2] = tmp2;
+      refreshAll();
+    }
+    return;
+  }
+  var del = ev.target.closest(".del");
+  if (del){
+    var idx = parseInt(del.closest("tr").dataset.idx, 10);
+    pushHistory();
+    rows().splice(idx, 1);
+    stateWarns = null;
+    refreshAll();
+    return;
+  }
+  var dup = ev.target.closest(".dup");
+  if (dup){
+    var idxDup = parseInt(dup.closest("tr").dataset.idx, 10);
+    pushHistory();
+    rows().splice(idxDup + 1, 0, JSON.parse(JSON.stringify(rows()[idxDup])));
+    refreshAll();
+    return;
+  }
+  var grp = ev.target.closest(".group-row");
+  if (grp){
+    var key = grp.dataset.group;
+    STATE.ui.collapsed[key] = !STATE.ui.collapsed[key];
+    renderTable();
+    save();
+  }
+});
+
+document.getElementById("grid").addEventListener("keydown", function(ev){
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "v"){
+    ev.preventDefault();
+    var text = ev.clipboardData ? ev.clipboardData.getData("text/plain") : "";
+    if (text) pasteIntoGrid(text);
+    else toast("Clipboard read failed; paste again with the cell focused.", "err");
+    return;
+  }
+  if (ev.key === "Escape"){
+    if (document.activeElement) document.activeElement.blur();
+    return;
+  }
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  var target = ev.target;
+  if (!target || !target.closest || !target.closest("#grid")) return;
+  var isInput = target.tagName === "INPUT" || target.tagName === "SELECT";
+  if (!isInput) return;
+  var tr = target.closest("tr");
+  if (!tr || tr.classList.contains("group-row")) return;
+  var td = target.closest("td");
+  if (!td) return;
+  var colIndex = Array.prototype.indexOf.call(tr.children, td);
+  var roles = columnRoles();
+  var role = roles[colIndex];
+  var move = null;
+  if (ev.key === "ArrowDown") move = {dr:1, dc:0};
+  else if (ev.key === "ArrowUp") move = {dr:-1, dc:0};
+  else if (ev.key === "Enter") move = {dr:1, dc:0};
+  else if ((ev.key === "ArrowLeft" || ev.key === "ArrowRight") && target.tagName === "INPUT" && target.type !== "checkbox") move = {dr:0, dc: ev.key === "ArrowLeft" ? -1 : 1};
+  else return;
+  ev.preventDefault();
+  var cursorPos = null;
+  if (target.tagName === "INPUT" && typeof target.selectionStart === "number" && target.selectionStart === target.selectionEnd && (ev.key === "ArrowLeft" || ev.key === "ArrowRight")){
+    var bound = move.dc === -1 ? 0 : (target.value ? target.value.length : 0);
+    var pos = target.selectionStart + move.dc;
+    if (pos >= 0 && pos <= target.value.length && target.selectionStart !== bound) return;
+    cursorPos = pos >= 0 && pos <= target.value.length ? pos : null;
+  }
+  var nextRow = tr;
+  for (var s=0;s<Math.abs(move.dr);s++){
+    nextRow = move.dr > 0 ? nextRow.nextElementSibling : nextRow.previousElementSibling;
+    if (!nextRow) return;
+    if (nextRow.classList.contains("group-row")){ s--; continue; }
+  }
+  var nextTd = nextRow.children[colIndex + move.dc];
+  if (!nextTd) return;
+  var nextRole = roles[colIndex + move.dc];
+  if (nextRole === "chk" || nextRole === "del") return;
+  var focusEl = nextTd.querySelector("input, select");
+  if (!focusEl) return;
+  if (focusEl.disabled){
+    var btn = nextTd.querySelector("button");
+    if (btn) btn.focus();
+    return;
+  }
+  focusEl.focus();
+  if (cursorPos !== null && focusEl.tagName === "INPUT" && focusEl.type !== "checkbox") focusEl.setSelectionRange(cursorPos, cursorPos);
+});
+
+document.getElementById("grid").addEventListener("change", function(ev){
+  if (ev.target && ev.target.id === "chkAll"){
+    var check = ev.target.checked;
+    document.querySelectorAll("#grid .chk").forEach(function(cb){ cb.checked = check; });
+    renderBulkBar();
+    return;
+  }
+  if (ev.target && ev.target.classList.contains("chk")) renderBulkBar();
+});
+
+document.getElementById("grid").addEventListener("dragover", function(ev){
+  ev.preventDefault();
+  var tr = ev.target.closest("tr");
+  if (tr && !tr.classList.contains("group-row")) tr.classList.add("drag-over");
+});
+
+document.getElementById("grid").addEventListener("dragleave", function(ev){
+  var tr = ev.target.closest("tr");
+  if (tr) tr.classList.remove("drag-over");
+});
+
+document.getElementById("grid").addEventListener("dragstart", function(ev){
+  var tr = ev.target.closest("tr");
+  if (!tr || tr.classList.contains("group-row")){ ev.preventDefault(); return; }
+  dragFrom = parseInt(tr.dataset.idx, 10);
+  tr.classList.add("dragging");
+  ev.dataTransfer.effectAllowed = "move";
+  ev.dataTransfer.setData("text/plain", String(dragFrom));
+});
+
+document.getElementById("grid").addEventListener("dragend", function(ev){
+  document.querySelectorAll("#grid tr").forEach(function(tr){ tr.classList.remove("dragging", "drag-over"); });
+  dragFrom = null;
+});
+
+document.getElementById("grid").addEventListener("drop", function(ev){
+  ev.preventDefault();
+  var tr = ev.target.closest("tr");
+  document.querySelectorAll("#grid tr").forEach(function(tr2){ tr2.classList.remove("drag-over"); });
+  if (!tr || tr.classList.contains("group-row") || dragFrom === null) return;
+  var dragTo = parseInt(tr.dataset.idx, 10);
+  if (dragTo === dragFrom) return;
+  var rs = rows();
+  if (STATE.ui.groupBy && rs[dragFrom].study !== rs[dragTo].study) return;
+  pushHistory();
+  var item = rs.splice(dragFrom, 1)[0];
+  var insertAt = dragTo;
+  if (dragFrom < dragTo) insertAt = dragTo;
+  rs.splice(insertAt, 0, item);
+  refreshAll();
+});
+
+var dragFrom = null;
+
+document.getElementById("bulkDelete").addEventListener("click", function(){
+  var idxs = selectedIndices().sort(function(a,b){ return b - a; });
+  if (!idxs.length) return;
+  if (!confirm("Delete " + idxs.length + " selected row" + (idxs.length > 1 ? "s" : "") + "?")) return;
+  pushHistory();
+  idxs.forEach(function(i){ rows().splice(i, 1); });
+  stateWarns = null;
+  refreshAll();
+});
+
+document.getElementById("bulkDuplicate").addEventListener("click", function(){
+  var idxs = selectedIndices().sort(function(a,b){ return a - b; });
+  if (!idxs.length) return;
+  pushHistory();
+  var rs = rows();
+  var copies = [];
+  idxs.forEach(function(i){ copies.push(JSON.parse(JSON.stringify(rs[i]))); });
+  var base = idxs[0] + copies.length;
+  copies.forEach(function(c){ rs.splice(base++, 0, c); });
+  refreshAll();
+});
+
+document.getElementById("bulkFill").addEventListener("click", function(){
+  var idxs = selectedIndices();
+  if (!idxs.length) return;
+  var dj = parseInt(document.getElementById("bulkDom").value, 10);
+  var code = document.getElementById("bulkJudg").value;
+  pushHistory();
+  idxs.forEach(function(i){ rows()[i].d[dj] = code; });
+  refreshAll();
+  toast("Filled " + tool().domains[dj].code + " for " + idxs.length + " row" + (idxs.length > 1 ? "s" : "") + ".", "ok");
+});
+
+document.getElementById("bulkClear").addEventListener("click", function(){
+  document.querySelectorAll("#grid .chk:checked").forEach(function(cb){ cb.checked = false; });
+  renderBulkBar();
+});
+
+document.getElementById("bulkCopy").addEventListener("click", function(){
+  var idxs = selectedIndices();
+  if (!idxs.length) return;
+  var selected = idxs.map(function(i){ return rows()[i]; });
+  copyText(csvOfRows(selected, STATE.tool).replace(/^\uFEFF/, ""));
+});
+
+document.getElementById("bulkWeights").addEventListener("click", function(){
+  pushHistory();
+  rows().forEach(function(r){ r.weight = 1; });
+  document.getElementById("optWeighted").disabled = !rowsHaveWeights(rows());
+  refreshAll();
+  toast("All weights reset to 1.", "ok");
+});
+
+document.getElementById("btnBackup").addEventListener("click", function(){
+  downloadFile("robvis_backup_" + new Date().toISOString().slice(0,10) + ".json",
+    new Blob([JSON.stringify(STATE, null, 2)], {type:"application/json"}));
+  toast("Backup downloaded.", "ok");
+});
+
+document.getElementById("btnRestore").addEventListener("click", function(){
+  document.getElementById("restoreFile").click();
+});
+
+document.getElementById("restoreFile").addEventListener("change", function(){
+  var f = this.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var s = JSON.parse(reader.result);
+      if (!s || !s.rows || typeof s.rows !== "object") throw new Error("bad backup");
+      STATE.tool = TOOLS[s.tool] ? s.tool : STATE.tool;
+      Object.keys(STATE.rows).forEach(function(k){
+        if (Array.isArray(s.rows[k])) STATE.rows[k] = normalizeStoredRows(s.rows[k], k);
+      });
+      if (s.opts) for (var key in STATE.opts) if (typeof s.opts[key] !== "undefined") STATE.opts[key] = s.opts[key];
+      if (s.ui) for (var ukey in STATE.ui) if (typeof s.ui[ukey] !== "undefined") STATE.ui[ukey] = s.ui[ukey];
+      historyStack = [];
+      historyPos = -1;
+      stateWarns = null;
+      renderAll();
+      applyStateToUi();
+      toast("Backup restored.", "ok");
+    }catch(e){
+      toast("Could not read backup file.", "err");
+    }
+  };
+  reader.readAsText(f);
+  this.value = "";
+});
+
+document.getElementById("wizClose").addEventListener("click", function(){ document.getElementById("wizard").classList.remove("visible"); });
+document.getElementById("wizCancel").addEventListener("click", function(){ document.getElementById("wizard").classList.remove("visible"); });
+document.getElementById("wizard").addEventListener("keydown", function(ev){
+  if (ev.key === "Escape") document.getElementById("wizard").classList.remove("visible");
+});
+
+var dragDepth = 0;
+window.addEventListener("dragenter", function(ev){
+  ev.preventDefault();
+  dragDepth++;
+  document.getElementById("dropOverlay").classList.add("visible");
+});
+window.addEventListener("dragover", function(ev){ ev.preventDefault(); });
+window.addEventListener("dragleave", function(ev){
+  ev.preventDefault();
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) document.getElementById("dropOverlay").classList.remove("visible");
+});
+window.addEventListener("drop", function(ev){
+  ev.preventDefault();
+  dragDepth = 0;
+  document.getElementById("dropOverlay").classList.remove("visible");
+  var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    document.getElementById("paste").value = reader.result;
+    wizardOpen(reader.result);
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById("wizNext").addEventListener("click", function(){
+  wizPreview();
+  document.getElementById("wizStep1").style.display = "none";
+  document.getElementById("wizStep2").style.display = "";
+  document.getElementById("wizNext").style.display = "none";
+  document.getElementById("wizApply").style.display = "";
+  document.getElementById("wizBack").style.display = "";
+});
+
+document.getElementById("wizBack").addEventListener("click", function(){
+  document.getElementById("wizStep1").style.display = "";
+  document.getElementById("wizStep2").style.display = "none";
+  document.getElementById("wizNext").style.display = "";
+  document.getElementById("wizApply").style.display = "none";
+  document.getElementById("wizBack").style.display = "none";
+});
+
+document.getElementById("wizApply").addEventListener("click", wizApply);
+
+document.getElementById("wizSplitId").addEventListener("change", function(){
+  if (wizState) wizState.spec.splitId = this.checked;
+});
+
+document.getElementById("wizMap").addEventListener("change", function(ev){
+  if (ev.target.classList.contains("wmap")){
+    var sel = ev.target;
+    var v = sel.value;
+    document.querySelectorAll("#wizMap select.wmap").forEach(function(other){
+      if (other !== sel && other.value === v && v !== "ignore") other.value = "ignore";
+    });
+  }
+});
+
+var tabButtons = document.querySelectorAll(".tabs button");
+for (var tbi=0;tbi<tabButtons.length;tbi++){
+  tabButtons[tbi].addEventListener("click", function(){
+    STATE.ui.tab = this.dataset.tab;
+    activateTab(STATE.ui.tab);
+    save();
+  });
+  tabButtons[tbi].addEventListener("keydown", function(ev){
+    if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+    ev.preventDefault();
+    var all = Array.prototype.slice.call(document.querySelectorAll(".tabs button"));
+    var pos = all.indexOf(this), next = ev.key === "ArrowRight" ? (pos + 1) % all.length : (pos - 1 + all.length) % all.length;
+    all[next].focus(); all[next].click();
+  });
+}
+
+document.getElementById("btnSaveProject").addEventListener("click", function(){
+  var name = document.getElementById("projectName").value.trim();
+  if (!name){ toast("Enter a project name first.", "err"); document.getElementById("projectName").focus(); return; }
+  projects[name] = cloneState();
+  saveProjects(); populateProjects();
+  document.getElementById("projectSelect").value = name;
+  toast("Project saved locally.", "ok");
+});
+
+document.getElementById("projectSelect").addEventListener("change", function(){
+  var name = this.value;
+  if (!name || !projects[name]) return;
+  STATE = JSON.parse(JSON.stringify(projects[name]));
+  historyStack = []; historyPos = -1; stateWarns = null;
+  applyStateToUi(); renderAll();
+  toast("Project loaded.", "ok");
+});
+
+document.getElementById("btnDeleteProject").addEventListener("click", function(){
+  var name = document.getElementById("projectSelect").value;
+  if (!name || !projects[name]) return;
+  if (!confirm("Delete local project \"" + name + "\"?")) return;
+  delete projects[name]; saveProjects(); populateProjects(); toast("Project deleted.", "ok");
+});
+
+document.getElementById("btnPreset").addEventListener("click", applyJournalPreset);
+document.getElementById("btnPackage").addEventListener("click", exportPackage);
+
+document.getElementById("tfPng150").addEventListener("click", function(){ exportPNG("figTf", figureName("robvis_traffic_light"), 150); });
+document.getElementById("tfPng300").addEventListener("click", function(){ exportPNG("figTf", figureName("robvis_traffic_light"), 300); });
+document.getElementById("tfSvg").addEventListener("click", function(){ exportSVG("figTf", figureName("robvis_traffic_light")); });
+document.getElementById("tfCopy").addEventListener("click", function(){ copyPng("figTf", 150); });
+document.getElementById("tfCaption").addEventListener("click", function(){ copyText(figureCaption()); });
+document.getElementById("barPng150").addEventListener("click", function(){ exportPNG("figBar", figureName("robvis_barplot"), 150); });
+document.getElementById("barPng300").addEventListener("click", function(){ exportPNG("figBar", figureName("robvis_barplot"), 300); });
+document.getElementById("barSvg").addEventListener("click", function(){ exportSVG("figBar", figureName("robvis_barplot")); });
+document.getElementById("barCopy").addEventListener("click", function(){ copyPng("figBar", 150); });
+document.getElementById("barStats").addEventListener("click", function(){
+  downloadFile("robvis_stats_" + safeName(tool().name) + ".csv", new Blob([statsCsv()], {type:"text/csv;charset=utf-8"}));
+});
+document.getElementById("barCaption").addEventListener("click", function(){ copyText(figureCaption()); });
+
+document.getElementById("bulkDom").innerHTML = bulkFillDomOptions();
+document.getElementById("bulkJudg").innerHTML = bulkJudgOptions();
+
+setupCollapsibleSections();
+setupPanes();
+setupAccessibility();
+loadProjects();
+load();
+applyStateToUi();
+renderAll();
+setPane(rows().length && STATE.ui.tab === "table" ? "data" : "import");
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+"step","added_study","year","n_cumulative","cum_events_bio","cum_events_comp","cum_log_irr","z","z_boundary","crossed","info_fraction","ris_total"
+1,"Cernic Suligoj 2020",2020,93,43,42,0.045,0.778,5.101,FALSE,0.19,490
+2,"Li 2026",2026,225,82,119,0.0331,0.808,3.731,FALSE,0.459,490
+3,"Zhang 2026",2026,415,169,205,0.0149,0.508,3.146,FALSE,0.846,490

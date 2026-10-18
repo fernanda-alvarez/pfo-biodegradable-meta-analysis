@@ -1,0 +1,61 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>PFO Meta-analysis v5 (Luna)</title>
+<style>body{font-family:Arial,sans-serif;background:#ffffff;color:#1f2937;max-width:1200px;margin:24px auto;padding:0 18px}h1,h2{color:#17365d}table{border-collapse:collapse;width:100%;background:white}th,td{border:1px solid #b9c4d5;padding:6px;text-align:left}th{background:#ffffff}img{display:block;max-width:100%;height:auto;background:#ffffff;margin:8px 0 26px;border:1px solid #000000}</style></head><body>
+<h1>PFO Meta-analysis v5 (Luna)</h1><p><b>Status:</b> Rebuilt in an isolated v5 package; v4 was not overwritten.</p>
+<h2>Methods</h2><p>Comparative models use RR for binary outcomes and MD for MIDAS, with REML random effects and Hartung-Knapp confidence intervals. Rare-event primary models use Mantel-Haenszel RD without a universal continuity correction. Single-arm models are supportive absolute proportions only.</p>
+<h2>Results</h2><table><thead><tr><th>Model</th><th>Measure</th><th>k</th><th>N</th><th>Estimate</th><th>CI low</th><th>CI high</th></tr></thead><tbody>
+<tr><td>ecl6_core</td><td>RR</td><td>3</td><td>415</td><td>1.01</td><td>0.94</td><td>1.08</td></tr>
+<tr><td>ecl12_gen_core</td><td>RR</td><td>2</td><td>181</td><td>1.10</td><td>0.40</td><td>2.97</td></tr>
+<tr><td>ecl12_mig</td><td>RR</td><td>2</td><td>228</td><td>1.03</td><td>0.59</td><td>1.78</td></tr>
+<tr><td>ecl24</td><td>RR</td><td>2</td><td>240</td><td>1.02</td><td>0.67</td><td>1.55</td></tr>
+<tr><td>strict_early</td><td>RR</td><td>3</td><td>235</td><td>1.10</td><td>0.85</td><td>1.43</td></tr>
+<tr><td>cve_late_core</td><td>RR</td><td>3</td><td>238</td><td>2.14</td><td>1.34</td><td>3.40</td></tr>
+<tr><td>cve_late_with_luani</td><td>RR</td><td>4</td><td>573</td><td>1.27</td><td>0.24</td><td>6.62</td></tr>
+<tr><td>midas_12m</td><td>MD</td><td>2</td><td>272</td><td>-0.76</td><td>-2.03</td><td>0.50</td></tr>
+<tr><td>af_late_core</td><td>RR</td><td>2</td><td>290</td><td>1.03</td><td>0.00</td><td>1243.36</td></tr>
+<tr><td>af_late_with_luani</td><td>RR</td><td>3</td><td>625</td><td>1.77</td><td>0.24</td><td>12.93</td></tr>
+<tr><td>drt_any</td><td>RD</td><td>4</td><td>573</td><td>0.01</td><td>-0.00</td><td>0.03</td></tr>
+<tr><td>embolization</td><td>RD</td><td>4</td><td>573</td><td>0.00</td><td>-0.00</td><td>0.01</td></tr>
+<tr><td>pericardial</td><td>RD</td><td>3</td><td>435</td><td>-0.01</td><td>-0.02</td><td>0.00</td></tr>
+<tr><td>sa_proc_success</td><td>proportion</td><td>4</td><td>221</td><td>0.98</td><td>0.93</td><td>1.00</td></tr>
+<tr><td>sa_closure_12m</td><td>proportion</td><td>3</td><td>197</td><td>0.93</td><td>0.41</td><td>1.00</td></tr>
+<tr><td>sa_drt</td><td>proportion</td><td>2</td><td>181</td><td>0.04</td><td>0.00</td><td>0.99</td></tr>
+<tr><td>close12_mig_strict</td><td>RR</td><td>2</td><td>228</td><td>0.97</td><td>0.39</td><td>2.42</td></tr>
+<tr><td>shunt_g6_general</td><td>RR</td><td>2</td><td>191</td><td>0.79</td><td>0.09</td><td>6.82</td></tr>
+<tr><td>af_late_full</td><td>RR</td><td>3</td><td>480</td><td>1.02</td><td>0.21</td><td>4.99</td></tr>
+<tr><td>af_late_full_with_luani</td><td>RR</td><td>4</td><td>815</td><td>1.70</td><td>0.52</td><td>5.60</td></tr>
+<tr><td>af_any_6m</td><td>RR</td><td>2</td><td>249</td><td>1.28</td><td>0.00</td><td>41280.55</td></tr>
+<tr><td>af_any_late</td><td>RR</td><td>4</td><td>539</td><td>0.84</td><td>0.31</td><td>2.23</td></tr>
+<tr><td>af_any_late_with_darsaklis</td><td>RR</td><td>5</td><td>706</td><td>0.94</td><td>0.46</td><td>1.93</td></tr>
+<tr><td>ecl6_expanded_early</td><td>RR</td><td>3</td><td>235</td><td>1.13</td><td>0.90</td><td>1.42</td></tr>
+<tr><td>ecl12_gen_with_luani</td><td>RR</td><td>3</td><td>452</td><td>1.04</td><td>0.94</td><td>1.15</td></tr>
+<tr><td>bleeding</td><td>RD</td><td>4</td><td>430</td><td>0.02</td><td>-0.02</td><td>0.05</td></tr>
+</tbody></table>
+<h2>Figures</h2>
+<h3>ecl6_core</h3><img src="figures/forest_ecl6_core.png" alt="ecl6_core forest plot">
+<h3>ecl12_gen_core</h3><img src="figures/forest_ecl12_gen_core.png" alt="ecl12_gen_core forest plot">
+<h3>ecl12_mig</h3><img src="figures/forest_ecl12_mig.png" alt="ecl12_mig forest plot">
+<h3>ecl24</h3><img src="figures/forest_ecl24.png" alt="ecl24 forest plot">
+<h3>strict_early</h3><img src="figures/forest_strict_early.png" alt="strict_early forest plot">
+<h3>cve_late_core</h3><img src="figures/forest_cve_late_core.png" alt="cve_late_core forest plot">
+<h3>cve_late_with_luani</h3><img src="figures/forest_cve_late_with_luani.png" alt="cve_late_with_luani forest plot">
+<h3>midas_12m</h3><img src="figures/forest_midas_12m.png" alt="midas_12m forest plot">
+<h3>af_late_core</h3><img src="figures/forest_af_late_core.png" alt="af_late_core forest plot">
+<h3>af_late_with_luani</h3><img src="figures/forest_af_late_with_luani.png" alt="af_late_with_luani forest plot">
+<h3>drt_any</h3><img src="figures/forest_drt_any.png" alt="drt_any forest plot">
+<h3>embolization</h3><img src="figures/forest_embolization.png" alt="embolization forest plot">
+<h3>pericardial</h3><img src="figures/forest_pericardial.png" alt="pericardial forest plot">
+<h3>sa_proc_success</h3><img src="figures/forest_sa_proc_success.png" alt="sa_proc_success forest plot">
+<h3>sa_closure_12m</h3><img src="figures/forest_sa_closure_12m.png" alt="sa_closure_12m forest plot">
+<h3>sa_drt</h3><img src="figures/forest_sa_drt.png" alt="sa_drt forest plot">
+<h3>close12_mig_strict</h3><img src="figures/forest_close12_mig_strict.png" alt="close12_mig_strict forest plot">
+<h3>shunt_g6_general</h3><img src="figures/forest_shunt_g6_general.png" alt="shunt_g6_general forest plot">
+<h3>af_late_full</h3><img src="figures/forest_af_late_full.png" alt="af_late_full forest plot">
+<h3>af_late_full_with_luani</h3><img src="figures/forest_af_late_full_with_luani.png" alt="af_late_full_with_luani forest plot">
+<h3>af_any_6m</h3><img src="figures/forest_af_any_6m.png" alt="af_any_6m forest plot">
+<h3>af_any_late</h3><img src="figures/forest_af_any_late.png" alt="af_any_late forest plot">
+<h3>af_any_late_with_darsaklis</h3><img src="figures/forest_af_any_late_with_darsaklis.png" alt="af_any_late_with_darsaklis forest plot">
+<h3>ecl6_expanded_early</h3><img src="figures/forest_ecl6_expanded_early.png" alt="ecl6_expanded_early forest plot">
+<h3>ecl12_gen_with_luani</h3><img src="figures/forest_ecl12_gen_with_luani.png" alt="ecl12_gen_with_luani forest plot">
+<h3>bleeding</h3><img src="figures/forest_bleeding.png" alt="bleeding forest plot">
+</body></html>

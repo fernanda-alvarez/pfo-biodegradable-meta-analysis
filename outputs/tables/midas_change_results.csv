@@ -1,0 +1,4 @@
+"model_id","correlation","k","md","ci_low","ci_high","per_study","note"
+"midas_change_r0.25",0.25,2,-0.762,-34.838,33.315,"Sun 2025 MD 1.38; Li 2025 MD -4.12","Within-arm change = 12-month minus baseline MIDAS; change SD derived with assumed correlation r (sensitivity 0.25/0.75); pooled MD of changes, k=2"
+"midas_change_r0.5",0.5,2,-0.879,-35.261,33.502,"Sun 2025 MD 1.38; Li 2025 MD -4.12","Within-arm change = 12-month minus baseline MIDAS; change SD derived with assumed correlation r (sensitivity 0.25/0.75); pooled MD of changes, k=2"
+"midas_change_r0.75",0.75,2,-0.997,-35.617,33.622,"Sun 2025 MD 1.38; Li 2025 MD -4.12","Within-arm change = 12-month minus baseline MIDAS; change SD derived with assumed correlation r (sensitivity 0.25/0.75); pooled MD of changes, k=2"

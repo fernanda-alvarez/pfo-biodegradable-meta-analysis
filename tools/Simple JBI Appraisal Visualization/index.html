@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple Offline JBI Appraisal — JBI Case Series</title>
+<style>
+  :root{
+    --border:#c9ccd1; --bg:#f6f7f9; --accent:#1f6fb2; --text:#1f2328;
+    --muted:#656d76; --warn:#9a6700; --err:#cf222e; --ok:#1a7f37;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg);}
+  header{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  header h1{margin:0;font-size:20px;}
+  header .sub{color:var(--muted);font-size:13px;}
+  header .badge{margin-left:auto;font-size:12px;color:var(--muted);}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 57px);}
+  aside{background:#fff;border-right:1px solid var(--border);padding:16px;overflow:auto;}
+  .pane-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+  .pane-nav button{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:5px;padding:7px 3px;font:inherit;font-size:11px;font-weight:600;cursor:pointer;}
+  .pane-nav button:hover{background:#f0f3f6;color:var(--text);}
+  .pane-nav button.active{background:#e8f2fb;border-color:#9ec7e8;color:#135b91;}
+  aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px;}
+  aside h2:first-child{margin-top:0;}
+  select,input[type=text],textarea{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font:inherit;background:#fff;}
+  textarea{height:120px;font-family:Consolas,Menlo,monospace;font-size:12px;resize:vertical;}
+  label.row{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;}
+  label.row input[type=checkbox]{width:auto;accent-color:var(--accent);}
+  .btn{display:inline-block;border:1px solid var(--border);background:#fff;color:var(--text);
+    padding:6px 12px;border-radius:5px;font:inherit;font-size:13px;cursor:pointer;margin:3px 3px 0 0;}
+  .btn:hover{background:#f0f3f6;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:#195d93;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,.tabs button:focus-visible{outline:3px solid #8ec5f2;outline-offset:2px;}
+  main{padding:16px 20px;overflow:auto;}
+  #status{margin-bottom:10px;font-size:13px;}
+  #status .info{color:var(--muted);}
+  #status .warn{color:var(--warn);}
+  #status .err{color:var(--err);}
+  #status .ok{color:var(--ok);}
+  #status ul{margin:4px 0 0;padding-left:20px;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;}
+  .toolbar input[type=text]{width:210px;}
+  .toolbar select{width:auto;}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  .tabs button{border:1px solid var(--border);border-bottom:none;background:#fff;padding:8px 18px;
+    border-radius:6px 6px 0 0;font:inherit;font-size:14px;cursor:pointer;color:var(--muted);}
+  .tabs button.active{background:var(--bg);border-bottom:1px solid var(--bg);color:var(--text);font-weight:600;position:relative;top:1px;}
+  .tab{display:none;}
+  .tab.active{display:block;}
+  .figtools{margin-bottom:10px;}
+  .figure{background:#fff;border:1px solid var(--border);border-radius:6px;padding:12px;overflow:auto;display:inline-block;max-width:100%;}
+  .figure svg{max-width:none;}
+  .placeholder{color:var(--muted);font-size:14px;padding:40px 20px;text-align:center;border:1px dashed var(--border);border-radius:6px;background:#fff;}
+  .placeholder h3{margin:0 0 8px;color:var(--text);}
+  .placeholder ol{text-align:left;display:inline-block;margin:8px 0;}
+  .tablewrap{background:#fff;border:1px solid var(--border);border-radius:6px;overflow:auto;max-height:72vh;}
+  table#grid{border-collapse:collapse;font-size:13px;}
+  table#grid th,table#grid td{border:1px solid var(--border);padding:4px 6px;white-space:nowrap;}
+  table#grid th{background:#f0f3f6;position:sticky;top:0;font-weight:600;z-index:2;}
+  table#grid td input[type=text]{width:150px;padding:4px 6px;}
+  table#grid td input[type=number]{width:64px;padding:4px 6px;}
+  table#grid td select{padding:4px 6px;width:110px;}
+  table#grid .del{color:var(--err);background:none;border:none;cursor:pointer;font-size:14px;}
+  table#grid .act{background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px;padding:2px 6px;}
+  table#grid th.sticky,table#grid td.sticky{position:sticky;left:0;z-index:4;background:#fff;}
+  table#grid th.sticky{background:#f0f3f6;}
+  td.ov{font-weight:600;}
+  .ov-pill{display:inline-block;border-radius:10px;padding:1px 8px;font-size:12px;color:#fff;}
+  #bulkbar{display:none;align-items:center;gap:8px;background:#fff8e6;border:1px solid #e5c77a;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:13px;}
+  #bulkbar.visible{display:flex;}
+  #bulkbar select{width:auto;padding:3px 6px;}
+  #bulkbar .btn{padding:3px 10px;}
+  .modal{position:fixed;inset:0;background:rgba(31,35,40,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:100;}
+  .modal.visible{display:flex;}
+  .modal-box{background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.25);width:100%;max-width:980px;max-height:90vh;display:flex;flex-direction:column;}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .modal-head h3{margin:0;font-size:15px;}
+  .modal-head button{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);}
+  .modal-body{padding:14px 16px;overflow:auto;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:6px;padding:12px 16px;border-top:1px solid var(--border);}
+  #wizPrev{border-collapse:collapse;font-size:12px;}
+  #wizPrev th,#wizPrev td{border:1px solid var(--border);padding:3px 6px;white-space:nowrap;}
+  #wizPrev th{background:#f0f3f6;position:sticky;top:0;}
+  .wiz-issue{color:var(--err);}
+  .ev-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .ev-head h4{margin:0;font-size:16px;}
+  .ev-question{font-size:14px;font-weight:600;margin:12px 0 4px;}
+  .ev-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 4px;}
+  .ev-quote{background:#f6f8fa;border-left:3px solid var(--border);padding:8px 12px;margin:4px 0;font-size:13px;font-style:italic;white-space:pre-wrap;}
+  .ev-text{font-size:13px;line-height:1.5;margin:4px 0;}
+  .ev-list{margin:4px 0 4px 18px;padding:0;font-size:13px;line-height:1.5;}
+  .resp-badge{display:inline-block;border-radius:10px;padding:2px 10px;font-size:13px;font-weight:700;color:#fff;}
+  .toasts{position:fixed;bottom:18px;right:18px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:420px;}
+  .toast{background:#1f2328;color:#fff;padding:10px 14px;border-radius:6px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);transition:all .2s;}
+  .toast.show{opacity:1;transform:none;}
+  .toast.ok{border-left:4px solid var(--ok);}
+  .toast.warn{border-left:4px solid var(--warn);}
+  .toast.err{border-left:4px solid var(--err);}
+  #dropOverlay{position:fixed;inset:10px;border:3px dashed var(--accent);border-radius:12px;background:rgba(31,111,178,.08);
+    display:none;align-items:center;justify-content:center;font-size:20px;color:var(--accent);z-index:300;pointer-events:none;}
+  #dropOverlay.visible{display:flex;}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45;}
+  .aside-actions{margin-top:10px;}
+  .project-row{display:flex;gap:6px;margin:4px 0;}
+  .project-row select{flex:1;}
+  .project-row .btn{margin:0;}
+  @media print{
+    aside,.tabs,.toolbar,.modal,#toasts,#dropOverlay,header .badge{display:none !important;}
+    .layout{display:block;}
+    main{padding:0;}
+    .tab{display:none !important;}
+    .tab.active{display:block !important;}
+    .figure{border:none;padding:0;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Simple Offline JBI Appraisal</h1>
+  <span class="sub">JBI Critical Appraisal Checklist for Case Series — traffic light &amp; summary visualisation</span>
+  <span class="badge" id="storeBadge">offline · local</span>
+</header>
+<div class="layout">
+<aside>
+  <div class="pane-nav">
+    <button data-pane="import" class="active">Import</button>
+    <button data-pane="data">Data</button>
+    <button data-pane="figure">Figure</button>
+    <button data-pane="export">Export</button>
+  </div>
+
+  <section id="pane-import" class="pane">
+    <h2>Import data</h2>
+    <p class="hint">Paste CSV (Study,Q1–Q10) or JSON (native appraisal export) and preview before applying.</p>
+    <textarea id="paste" placeholder="Study,Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8,Q9,Q10,Overall&#10;Example 2025,Yes,Yes,Yes,Unclear,Unclear,Yes,Yes,Yes,Yes,Yes,Unclear"></textarea>
+    <div class="aside-actions">
+      <button id="btnImport" class="btn primary">Preview import</button>
+      <button id="btnExample" class="btn">Reload 7-study data</button>
+      <button id="btnFile" class="btn">Open CSV/JSON file…</button>
+      <input type="file" id="file" accept=".csv,.json,text/csv,application/json" style="display:none">
+    </div>
+    <p class="hint">Drag &amp; drop a .csv or .json file anywhere on the page.</p>
+  </section>
+
+  <section id="pane-data" class="pane" style="display:none">
+    <h2>Data options</h2>
+    <label class="row"><input type="checkbox" id="optAuto" checked> Auto-compute overall judgment</label>
+    <label class="row"><input type="checkbox" id="optComp" checked> Show completion % column</label>
+    <label class="row"><input type="checkbox" id="optWeighted"> Weighted bar plot (uses Weight column)</label>
+    <label class="row"><span style="width:74px">Sort rows</span><select id="sortBy">
+      <option value="original">Original order</option>
+      <option value="name">Study name A–Z</option>
+    </select></label>
+    <label class="row"><span style="width:74px">Find study</span><input type="text" id="query" placeholder="Filter by study name"></label>
+    <h2>Title &amp; notes</h2>
+    <input type="text" id="uiTitle" placeholder="Figure title">
+    <input type="text" id="uiSubtitle" placeholder="Subtitle" style="margin-top:6px">
+    <textarea id="uiFootnote" placeholder="Footnote (shown on figures)" style="height:70px;margin-top:6px"></textarea>
+    <h2>Projects (local)</h2>
+    <div class="project-row">
+      <select id="projectList"></select>
+      <button id="btnLoadProject" class="btn">Load</button>
+      <button id="btnSaveProject" class="btn">Save</button>
+      <button id="btnDelProject" class="btn">Del</button>
+    </div>
+  </section>
+
+  <section id="pane-figure" class="pane" style="display:none">
+    <h2>Figure options</h2>
+    <label class="row"><span style="width:74px">Font scale</span><select id="fontSel">
+      <option value="0.8">Small</option>
+      <option value="1" selected>Normal</option>
+      <option value="1.2">Large</option>
+    </select></label>
+    <label class="row"><span style="width:74px">Font family</span><select id="fontFamily">
+      <option value="Helvetica">Helvetica</option>
+      <option value="Arial">Arial</option>
+      <option value="Times">Times New Roman</option>
+      <option value="Georgia">Georgia</option>
+    </select></label>
+    <label class="row"><span style="width:74px">Journal width</span><select id="journalSel">
+      <option value="0">Screen (auto)</option>
+      <option value="7.1">7.1 in</option>
+      <option value="5.5">5.5 in</option>
+      <option value="3.5">3.5 in</option>
+    </select></label>
+    <label class="row"><span style="width:74px">Domain labels</span><select id="domainLabels">
+      <option value="short">Short (Q1–Q10)</option>
+      <option value="full">Full question text</option>
+    </select></label>
+    <label class="row"><input type="checkbox" id="optLegend" checked> Show legend</label>
+    <label class="row"><input type="checkbox" id="optCaption" checked> Show caption</label>
+    <label class="row"><input type="checkbox" id="optBarPct" checked> Show % labels in bar plot</label>
+    <label class="row"><span style="width:74px">Point size</span><input type="number" id="psize" value="10" min="6" max="18" style="width:64px"></label>
+  </section>
+
+  <section id="pane-export" class="pane" style="display:none">
+    <h2>Export figure</h2>
+    <button id="btnPng300" class="btn primary">PNG 300 dpi</button>
+    <button id="btnPng600" class="btn">PNG 600 dpi</button>
+    <button id="btnSvg" class="btn">SVG</button>
+    <button id="btnCopyPng" class="btn">Copy PNG</button>
+    <h2>Export data</h2>
+    <button id="btnCsv" class="btn">CSV</button>
+    <button id="btnJson" class="btn">JSON (native)</button>
+    <button id="btnPackage" class="btn">Backup package</button>
+    <h2>Publication</h2>
+    <button id="btnCaption" class="btn">Copy caption</button>
+    <button id="btnPrint" class="btn">Print / PDF</button>
+  </section>
+
+  <div id="status" aria-live="polite"></div>
+</aside>
+
+<main>
+  <div class="toolbar">
+    <strong id="summary"></strong>
+  </div>
+  <div class="tabs">
+    <button data-tab="tf" class="active">Traffic light</button>
+    <button data-tab="bar">Bar plot</button>
+    <button data-tab="table">Data table</button>
+  </div>
+  <section id="tab-tf" class="tab active">
+    <div class="figtools">
+      <button id="btnTfPng" class="btn primary">PNG</button>
+      <button id="btnTfSvg" class="btn">SVG</button>
+      <button id="btnTfCopy" class="btn">Copy</button>
+      <span class="hint" style="margin-left:8px">Click any cell for the evidence behind the judgement.</span>
+    </div>
+    <div id="figTf" class="figure"></div>
+  </section>
+  <section id="tab-bar" class="tab">
+    <div class="figtools">
+      <button id="btnBarPng" class="btn primary">PNG</button>
+      <button id="btnBarSvg" class="btn">SVG</button>
+      <button id="btnBarCopy" class="btn">Copy</button>
+    </div>
+    <div id="figBar" class="figure"></div>
+  </section>
+  <section id="tab-table" class="tab">
+    <div id="bulkbar">
+      <span id="bulkCount">0 selected</span>
+      <select id="bulkItem"></select>
+      <select id="bulkValue">
+        <option value="y">Yes</option>
+        <option value="n">No</option>
+        <option value="u">Unclear</option>
+        <option value="x">Not applicable</option>
+      </select>
+      <button id="btnBulkSet" class="btn">Set item</button>
+      <button id="btnBulkDel" class="btn">Delete selected</button>
+      <button id="btnBulkClear" class="btn">Clear</button>
+    </div>
+    <div class="tablewrap"><table id="grid"></table></div>
+  </section>
+</main>
+</div>
+
+<div id="wizard" class="modal" role="dialog" aria-modal="true" aria-label="Import preview">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Import preview</h3><button class="close" aria-label="Close">×</button></div>
+    <div class="modal-body">
+      <div id="wizIssues"></div>
+      <div style="overflow:auto;max-height:52vh"><table id="wizPrev"></table></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn cancel">Cancel</button>
+      <button class="btn primary apply">Apply import</button>
+    </div>
+  </div>
+</div>
+
+<div id="evidence" class="modal" role="dialog" aria-modal="true" aria-label="Evidence detail">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Appraisal evidence</h3><button class="close" aria-label="Close">×</button></div>
+    <div class="modal-body" id="evidenceBody"></div>
+    <div class="modal-foot"><button class="btn close">Close</button></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="dropOverlay">Drop CSV or JSON file to import</div>
+
+<script>
+"use strict";
+
+/* ================================================================ *
+ *  Simple Offline JBI Appraisal — JBI Critical Appraisal Checklist *
+ *  for Case Series (10 items). Single-file, offline, local-only.   *
+ *  Data model, parsers, pure renderers and helpers live above the  *
+ *  DOM-wiring boundary so they can be exercised in node (tests/).  *
+ * ================================================================ */
+
+var APP_NAME = "Simple Offline JBI Appraisal";
+var APP_VERSION = "1.0.0";
+var TOOL_NAME = "JBI Critical Appraisal Checklist for Case Series";
+
+/* ---------- The ten JBI case-series questions ---------- */
+var ITEMS = [
+  {code:"Q1",  name:"Were there clear criteria for inclusion in the case series?"},
+  {code:"Q2",  name:"Was the condition measured in a standard, reliable way for all participants included in the case series?"},
+  {code:"Q3",  name:"Were valid methods used for identification of the condition for all participants?"},
+  {code:"Q4",  name:"Did the case series have consecutive inclusion of participants?"},
+  {code:"Q5",  name:"Did the case series have complete inclusion of participants?"},
+  {code:"Q6",  name:"Was there clear reporting of the demographics of the participants?"},
+  {code:"Q7",  name:"Was there clear reporting of clinical information of the participants?"},
+  {code:"Q8",  name:"Were the outcomes or follow-up results of cases clearly reported?"},
+  {code:"Q9",  name:"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?"},
+  {code:"Q10", name:"Was statistical analysis appropriate?"}
+];
+
+/* ---------- Item responses ---------- */
+var RESP = {
+  y:{label:"Yes",            short:"Yes",       glyph:"+", colour:"#02C100", shape:"circle"},
+  n:{label:"No",             short:"No",        glyph:"X", colour:"#BF0000", shape:"circle"},
+  u:{label:"Unclear",        short:"Unclear",   glyph:"?", colour:"#E2DF07", shape:"circle"},
+  x:{label:"Not applicable", short:"N/A",       glyph:"—", colour:"#cccccc", shape:"circle"}
+};
+var RESP_ORDER = ["n","u","y","x"];
+
+/* ---------- Overall judgments (project formula, transparent) ---------- */
+var OVERALL = {
+  l:{label:"Low concern", short:"Low concern", glyph:"+", colour:"#1a7f37", shape:"square"},
+  u:{label:"Unclear",     short:"Unclear",     glyph:"?", colour:"#E2DF07", shape:"square"},
+  h:{label:"High concern",short:"High concern",glyph:"X", colour:"#BF0000", shape:"square"}
+};
+var OVERALL_ORDER = ["h","u","l"];
+
+var OVERALL_RULE = "Overall judgment rule: High concern if any item is No; Unclear if any item is Unclear (or unreported); otherwise Low concern. Not-applicable items do not affect the overall judgment.";
+
+/* ---------- Embedded dataset (injected by tools/build_dataset.mjs) ---------- */
+var EMBEDDED = {"generated":"2026-08-04","tool":"JBI Critical Appraisal Checklist for Case Series","studies":{"Du_2022":{"study_id":"Du_2022","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"A Prospective, Single-Center, Phase I Clinical Trial to Evaluate the Value of Transesophageal Echocardiography in the Closure of Patent Foramen Ovale With a Novel Biodegradable Occluder; described in Methods as 'a prospective, single-center, first-in-human trial' (p. 2, Methods, Patient Population).","design_actual":"Prospective, single-arm interventional case series (phase I feasibility study) of 44 patients with PFO who underwent transcatheter closure with a novel biodegradable occluder (NBO), with echocardiographic evaluation of PFO anatomy, procedural outcomes, device degradation, thrombus and residual shunt at fixed follow-up timepoints (2 days, 3 months, 6 months, 12 months). No comparator or control group.","n_participants":"44 (21 men, 23 women; mean age 36.6 ± 10.9 years)","n_centers":"1 (Department of Structural Heart Disease, The First Affiliated Hospital of Xi'an Jiaotong University, Xi'an, China)","prospective_retrospective":"Prospective","recruitment":"Patients admitted to a single hospital department from June 2019 to June 2020 with TIA, cryptogenic stroke, or migraine, diagnosed with PFO by c-TTE and TEE; exclusions (small ASD, pathological pulmonary arteriovenous fistula) stated. No explicit statement of consecutive enrollment and no screening log/denominator reported; authors state no patient was selected for favorable anatomy.","report_type_judgment":"Case series (prospective single-arm interventional case series; the authors label it a phase I clinical trial but it contains no control group)","tool_eligibility_note":"The report is a prospective single-arm interventional case series of 44 participants and is appropriately assessed with the JBI Case Series checklist. Although the authors term it a phase I clinical trial, the design is a descriptive, uncontrolled case series; no design concern precludes use of the tool."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Patient Population; p. 7, Discussion","exact_quote":"We prospectively investigated 44 PFO patients (21 men, 23 women; mean age 36.6 ± 10.9 years) after excluding those with a small ASD, who admitted to the Department of Structural Heart Disease in our hospital from June 2019 to June 2020 suffering from transient ischemic attack (TIA), cryptogenic stroke, and migraine headaches.","reviewer_rationale":"Inclusion criteria are clearly specified: adults diagnosed with PFO (confirmed by c-TTE and TEE, as stated in the abstract and methods) admitted to the department during a defined window (June 2019–June 2020) with one of three indications (TIA, cryptogenic stroke, migraine). Exclusion criteria are also stated: patients with a small ASD were excluded (p. 2), and the Discussion additionally states 'patients with pathological pulmonary arteriovenous fistula as well as those with a small ASD were excluded' (p. 7). This provides clear, explicit eligibility criteria for the case series."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 2, Methods, TTE and TEE Examination; p. 4, Methods, Management After Implantation","exact_quote":"Contrast transthoracic echocardiography (c-TTE) was used to identify the RLS. The modified c-TTE procedure was performed according to the methods described in our previous study (11). RLS was graded according to the highest number of microbubbles observed in the left chamber in a single frame as follows: image-negative (no microbubbles), small (1–10 microbubbles), moderate (11–30 microbubbles), or extensive (30 microbubbles or left chamber opacification) (12).","reviewer_rationale":"The condition (PFO and right-to-left shunt) was measured with standardized, validated echocardiographic methods for all participants: a modified c-TTE protocol referenced to a prior publication, TEE with agitated saline at rest and during Valsalva, and a standardized quantitative RLS grading scheme (microbubble counts). Follow-up residual shunt was assessed with c-TTE/TEE at fixed timepoints for all patients, and TTE/TEE were performed by the same experienced sonographer (p. 2 and p. 4). This constitutes standard, reliable measurement applied uniformly to the sample."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 2, Methods, TTE and TEE Examination; p. 7, Discussion","exact_quote":"A standardized TEE protocol was used to assess the morphologic characteristics of the atrial septum and RLS through a PFO with agitated saline, both at rest and during the Valsalva maneuver (13).","reviewer_rationale":"All participants were identified as having PFO using valid diagnostic methods: contrast transthoracic echocardiography (c-TTE) and transesophageal echocardiography (TEE) with agitated saline bubble study at rest and during Valsalva, supplemented by TTE (parasternal aortic short-axis, 4-chamber, subcostal biatrial views) and color-flow Doppler. The Discussion confirms 'all cases were confirmed as PFO by TEE with agitated saline' (p. 7). Routine ultrasound, CT, and MRI were used to rule out cardiac, intracranial, extracranial arterial disease and pulmonary arteriovenous malformations (p. 2). These are standard, valid identification methods applied to all participants."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Unclear","evidence_location":"p. 2, Methods, Patient Population","exact_quote":"We prospectively investigated 44 PFO patients (21 men, 23 women; mean age 36.6 ± 10.9 years) after excluding those with a small ASD, who admitted to the Department of Structural Heart Disease in our hospital from June 2019 to June 2020 suffering from transient ischemic attack (TIA), cryptogenic stroke, and migraine headaches.","reviewer_rationale":"A defined recruitment window (June 2019–June 2020) and source population (patients admitted to the Department of Structural Heart Disease) are reported, and the study is prospective. However, the report contains no explicit statement that all eligible patients were enrolled consecutively, and no screening log or count of screened versus enrolled patients is provided. Absence of reporting is not treated as evidence of non-performance, but there is insufficient direct evidence to confirm consecutive inclusion, so the response is Unclear."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Unclear","evidence_location":"p. 7, Discussion; p. 2, Methods, Patient Population","exact_quote":"No attempt was made to select patients with more favorable anatomy, and no patient with a PFO was excluded on the basis of defect size or presence of an aneurysm.","reviewer_rationale":"Exclusions are explicitly named (patients with a small ASD and those with pathological pulmonary arteriovenous fistula were excluded), and the authors state that no selection by anatomy occurred and no patient was excluded based on defect size or aneurysm. This is direct evidence addressing completeness of inclusion with respect to anatomy. However, no screening denominator, total number screened, or count of excluded patients is reported, so it cannot be verified that all eligible patients from the source population during the window were included. The response is therefore Unclear rather than a confident Yes."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Yes","evidence_location":"p. 5, Table 1; p. 2, Methods, Patient Population","exact_quote":"TABLE 1 | Patient baseline demographics characteristics of the study population (n = 44). Age (year) mean standard deviation 36.6 ± 10.9; Sex (male) 21 (47.7); Sex (female) 23 (52.3); Coronary heart disease 1 (2.3); Hypertension 8 (18.2); Diabetic mellitus 1 (2.3); Arrhythmia 2 (4.5); Indication for closure: Cryptogenic stroke 5 (11.4); Transient ischemic attack 3 (6.8); Migraine 28 (63.6).","reviewer_rationale":"Demographics are clearly reported for the full cohort in Table 1 (n=44): age (mean ± SD), sex distribution, relevant comorbidities (coronary heart disease, hypertension, diabetes mellitus, arrhythmia), and the indication for closure. This provides clear and complete demographic reporting for all participants."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Yes","evidence_location":"p. 5, Table 1; p. 5, Results, Results of Transcatheter Closure","exact_quote":"c-TTE before closure: Positive at rest 15 (34.1); Extensive RLS after Valsalva maneuver 44 (100). PFO size After Valsalva maneuver by TEE: PFO size of right atrial side (mm) 3.9 ± 0.3; PFO size of left atrial side (mm) 1.7 ± 0.1; PFO length of tunnel (mm) 7.4 ± 0.4. Other special structures by TEE: Atrial septal aneurysm 1 (2.3); Atrial septal soft 2 (4.5); Long tunnel 10 (22.7).","reviewer_rationale":"Baseline clinical information is reported in Table 1 for all participants: indication (cryptogenic stroke, TIA, migraine), pre-closure c-TTE positivity (34.1% positive at rest; 100% extensive RLS after Valsalva), PFO morphology measured by TEE (right and left atrial opening sizes, tunnel length), and special structures (atrial septal aneurysm, soft septum, long tunnel), plus implanted occluder device sizes (24/18, 24/24, 30/30). This constitutes clear reporting of the clinical and anatomical characteristics relevant to the case series."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Yes","evidence_location":"p. 5, Results, Complications After Occlusion; p. 5, Table 1; p. 6, Table 2; p. 7, Table 3","exact_quote":"All patients completed TTE at 3, 6, and 12 months and c-TTE and TEE at 6 and 12 months after occlusion. The results showed thrombi on the surface of the occluder device in 3 (6.8%) patients at 3 and 6 months after occlusion. ... At 6 months after procedure, there were 3 (6.8%) cases of extensive residual RLS, 2 (4.5%) cases of moderate shunt, and 7 (15.9%) cases of small shunt. One year after operation, the TEE result showed that 2 (4.5%) cases with extensive shunt all exhibited an intradisc shunt and 6 (13.6%) cases of small shunt were confirmed to originate from pulmonary veins. The PFO-RLS occlusion rate reached 95.5% (Table 3).","reviewer_rationale":"Outcomes are clearly reported with explicit denominators and timepoints: procedural success (100%; 'All patients successfully underwent PFO occlusion with NBO under TTE guidance'); occluder device disc diameters and thickness at 2 days, 3, 6, and 12 months (Table 2, with between-timepoint P values); complications including device thrombus in 3 patients (6.8%, resolved after rivaroxaban) and absence of acute stroke, peripheral embolism, novel arrhythmia, or other systemic adverse responses; and residual RLS grades (negative/mild/moderate/extensive) at 6 and 12 months (Table 3) with an effective PFO-RLS occlusion rate of 95.5%. All 44 patients completed the scheduled follow-up, so outcomes are reported for the full sample."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 1, author affiliations; p. 2, Methods, Patient Population; p. 4, Methods, Management After Implantation","exact_quote":"We prospectively investigated 44 PFO patients (21 men, 23 women; mean age 36.6 ± 10.9 years) after excluding those with a small ASD, who admitted to the Department of Structural Heart Disease in our hospital from June 2019 to June 2020 suffering from transient ischemic attack (TIA), cryptogenic stroke, and migraine headaches.","reviewer_rationale":"The presenting site is clearly identified: a single center — the Department of Structural Heart Disease, The First Affiliated Hospital of Xi'an Jiaotong University, Xi'an, China (author affiliation, p. 1) — a tertiary university hospital. The recruitment period (June 2019 to June 2020) and referral setting (patients admitted to the department) are reported. Operator information is partially given: the same experienced sonographer performed all TTE/TEE examinations. Single-center demographic information is clearly reported."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 4, Methods, Statistical Analysis","exact_quote":"Continuous variables are expressed as mean ± standard deviation, and categorical variables are reported as counts and percentages. Unpaired t test was used to compare the size and thickness change of the NBO after occlusion between different periods. Statistical significance was assumed when the P-value was \u003c0.05. All data were analyzed using the SPSS software (version 18.0.1, SPSS Inc.).","reviewer_rationale":"Statistical analysis is appropriate for a descriptive case series: continuous data summarized as mean ± SD, categorical data as counts/percentages, with all denominators and timepoints stated (n=44; residual shunt rates at 6 and 12 months; device measurements at four timepoints). The primary feasibility outcomes (procedural success, closure/occlusion rates, thrombus incidence) are appropriately reported descriptively. One technical caveat: repeated measurements of device size on the same patients across timepoints were compared with unpaired t tests, which does not account for within-subject correlation (a paired/repeated-measures approach would be more rigorous); however, this does not undermine the overall appropriateness of the statistical reporting for a case series."}],"overall":{"domain_rationale":"This is a prospective, single-center, single-arm interventional case series (phase I feasibility trial) of 44 PFO patients closed with a novel biodegradable occluder. It scores favorably on most items: clear eligibility criteria (indications TIA/cryptogenic stroke/migraine, exclusions small ASD and pathological pulmonary AV fistula) (Q1); standardized, valid measurement and identification of PFO/RLS for all participants via c-TTE, TEE with agitated saline at rest and Valsalva, and a quantitative microbubble grading scheme performed by the same sonographer (Q2, Q3); clear reporting of demographics, baseline clinical/anatomical information, outcomes at multiple follow-up timepoints with denominators, and site information (Q6–Q9); and appropriate descriptive statistics (Q10). The main methodological uncertainties concern sampling: the report defines a recruitment window and source population but does not explicitly state consecutive enrollment and provides no screening log or excluded-patient counts, so consecutive and complete inclusion cannot be verified (Q4, Q5 = Unclear). The authors do state that no patient was selected for favorable anatomy and none was excluded based on defect size or aneurysm. Overall, the report is a well-described descriptive case series with transparent outcome reporting, but its feasibility-trial sampling and single-center design limit confidence in generalizable incidence estimates.","strengths":["Prospective design with a defined recruitment window (June 2019–June 2020) and explicit eligibility criteria (TIA, cryptogenic stroke, migraine; exclusions: small ASD, pathological pulmonary arteriovenous fistula).","Standardized, valid diagnostic methods applied to all participants (c-TTE, TEE with agitated saline at rest/Valsalva, quantitative RLS grading by microbubble counts), all performed by the same experienced sonographer.","Clear and complete reporting of baseline demographics, comorbidities, indications, PFO morphology and RLS grade for all 44 participants (Table 1).","Outcomes reported with explicit denominators at fixed follow-up timepoints (2 days, 3, 6, 12 months), including procedural success, device degradation, thrombus, residual shunt grading, and occlusion rate (Tables 2–3).","Authors explicitly state no selection of patients for favorable anatomy and no exclusion based on defect size or aneurysm.","Ethics committee approval and written informed consent documented."],"limitations":["Consecutive enrollment is not explicitly stated and no screening log/denominator is reported, so consecutive and complete inclusion cannot be verified (Q4, Q5 Unclear).","Single-center, small-sample (n=44) phase I feasibility study; authors acknowledge the true incidence of residual shunts and thrombi remains unknown.","Repeated device-size measurements across timepoints were compared with unpaired t tests, which ignores within-subject correlation.","Follow-up limited to 12 months; long-term device degradation effects not assessed.","Intraprocedural guidance used TTE rather than TEE, limiting intraoperative anatomical detail (acknowledged by authors)."],"missing_information":["Screening log or total number of screened/excluded patients to verify consecutive and complete inclusion.","Counts of patients excluded for small ASD or pathological pulmonary arteriovenous fistula.","Explicit statement of whether enrollment was consecutive.","Detailed operator/site information beyond 'same experienced sonographer' (e.g., number of operators, implanting physician experience)."],"unavailable_documents":[],"reviewer_override":"none","override_justification":""}},"He_2025":{"study_id":"He_2025","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"Prospective, nonrandomized, multicenter study; reported as 'a multicenter, single-arm, prospective study' and registered as a clinical trial (ChiCTR1900024036).","design_actual":"Prospective single-arm interventional case series without a control group.","n_participants":"137 analyzed (138 enrolled; 1 patient excluded from statistical analysis)","n_centers":"6","prospective_retrospective":"Prospective","recruitment":"Prospective enrollment within a defined window (June 2019–September 2020) with an explicit statement that all eligible patients at each center were included; no screening log reported.","report_type_judgment":"Case series (single-arm prospective study); appropriate for the JBI Case Series checklist","tool_eligibility_note":"The study is a registered single-arm interventional clinical trial without a parallel or randomized control group (the authors explicitly state no control was set up). Consistent with the appraisal instructions, it is assessed exactly as reported with the JBI Case Series tool, which is the appropriate instrument for this design."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Study population","exact_quote":"Inclusion criteria: (1) PFO with substantial RLS; (2) Age greater than 16 years; (3) Voluntary participation in the clinical trial and signing of the informed consent form. Exclusion criteria: (1) Known causes of ischemic stroke; (2) Contraindications to antithrombotic therapy; (3) Systemic or local infection, sepsis, intracardiac thrombosis, complete obstruction of the inferior vena cava; (4) Pregnancy; (5) Pulmonary hypertension or PFO with a special channel; (6) Massive cerebral infarction within 4 weeks; (7) Inability to sign informed consent.","reviewer_rationale":"The report provides explicit, enumerated inclusion and exclusion criteria covering the indication (PFO with substantial RLS), age threshold, consent, and relevant medical exclusions. These are clear, pre-specified criteria for defining the case series population."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Echocardiography protocols and definitions; p. 3, Methods, Follow-up","exact_quote":"All patients had to undergo TEE examination to confirm the diagnosis of PFO and to evaluate its anatomical characteristics.","reviewer_rationale":"PFO diagnosis and anatomy were standardized by mandatory TEE for all participants, and RLS severity was semiquantified on a defined four-level scale with explicit thresholds (>30 MBs by cTTE; shower or curtain HITS by cTCD). Follow-up used standardized TTE/ECG/cTTE/TEE at fixed timepoints, and outcomes (complete occlusion, residual RLS, DRT) were measured with consistent imaging. Although the authors describe shunt grading as a 'subjective assessment,' the standardized protocol and thresholds provide a reliable, consistent measurement across participants."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 2, Methods, Echocardiography protocols and definitions","exact_quote":"The presence of RLS was confirmed when microbubbles (MBs) were seen in the left atrium within the first 3 cardiac cycles after MB appearance in the right atrium at rest or after the Valsalva maneuver (VM).","reviewer_rationale":"Valid and recognized diagnostic methods (TTE, TEE, cTTE, cTCD) were used to identify PFO with substantial RLS in all participants, with a fully described agitated-saline contrast protocol (8 ml saline + 1 ml air + 1 ml blood) and confirmatory TEE required for every patient. The methods are appropriate for condition identification in this population."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Yes","evidence_location":"p. 2, Methods, Study design and Study population","exact_quote":"Between June 2019 and September 2020, 138 patients who underwent PFO closure were prospectively enrolled at 6 hospitals in China ... All patients at each center who satisfied the inclusion criteria and did not meet the exclusion criteria were included in this study.","reviewer_rationale":"A defined recruitment window is reported, and the explicit statement that every patient satisfying the criteria at each center was included indicates consecutive enrollment of all eligible participants. No screening log is provided, but the explicit all-eligible-included statement directly supports a Yes; a screening log would only have further verified this."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Yes","evidence_location":"p. 2, Methods, Study population; p. 5, Results, Study population and preprocedure data","exact_quote":"All patients at each center who satisfied the inclusion criteria and did not meet the exclusion criteria were included in this study.","reviewer_rationale":"The report directly states that all eligible patients at each center were included. The single exclusion from statistical analysis (1 of 138 patients with PFO combined with a small ASD) is explicitly explained ('the device closured the small ASD and retained the PFO, was not included in the statistical analysis'), supporting complete inclusion of the target population."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Yes","evidence_location":"p. 5, Table 1 (Baseline characteristics); p. 5, Results, Study population and preprocedure data","exact_quote":"The mean patient age was 38.1 ± 12.4 years, and 37.2% were men.","reviewer_rationale":"Table 1 reports age, sex, PFO-related clinical syndromes (CS, TIA, migraine, OSAHS, others), and preprocedural echocardiographic findings (PFO sizes at rest and after VM, tunnel length, ASA or membrane mobility >6.5 mm, Chiari's network, prominent EV, small ASD, bicuspid aortic valve), providing clear demographic and baseline characterization of the cohort."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Yes","evidence_location":"p. 5, Tables 1 and 2; p. 5, Results, Study population and preprocedure data","exact_quote":"this study only included patients with substantial RLS at rest and/or after VM by cTTE/cTCD.","reviewer_rationale":"Clinical information is clearly reported: baseline clinical syndromes (CS 17 [12.4%], TIA 3 [2.2%], migraine 94 [68.6%], OSAHS 1 [0.7%], others 22 [16.1%]), PFO morphology (sizes at rest and after VM, tunnel length, ASA, Chiari's network, prominent EV, small ASD), and RLS grades at rest and after VM by cTTE (n=125) and cTCD (n=90) in Table 2. This covers symptoms, stroke/TIA history, PFO anatomy, and shunt severity."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Yes","evidence_location":"p. 5-6, Results (Procedural results; Clinical and echocardiographic follow-up), Table 3, Figures 5-6","exact_quote":"The complete occlusion rate was 97.1% (133/137) at 12 months after the procedure.","reviewer_rationale":"Outcomes are reported with denominators and timepoints: procedural success (137; 99.3% in abstract/text, 100% in Table 3), zero procedural complications, complete occlusion 97.1% (133/137) at 12 months, residual RLS grades at 6 and 12 months (including 8 pulmonary arteriovenous-level cases), DRT (3 cases, 2.2%) with management and resolution, 2 cases of micropericardial effusion, 2 cases of new-onset premature atrial beats, and 100% completion of clinical follow-up at 24 h and 1, 3, 6, 12 months."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 2, Methods, Study population; p. 1, Abstract","exact_quote":"Between June 2019 and September 2020, 138 patients who underwent PFO closure were prospectively enrolled at 6 hospitals in China (The First Affiliated Hospital of Xi'an Jiaotong University, Wuhan Asia Heart Hospital, General Hospital of Northern Theater Command, The First Bethune Hospital Jilin University, Shandong Province Qianfushan Hospital, Binzhou Medicial University Hospitial).","reviewer_rationale":"The number of centers (6), country (China), the six named sites, and the recruitment period (June 2019–September 2020) are clearly reported, along with ethics approval and trial registration. This provides clear presenting-site demographic information."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 3, Methods, Statistical analysis","exact_quote":"Given the descriptive nature of this study and the small sample size, no between-group comparison was performed. All statistical analyses were performed with commercially available software (PASW Statistics v20.0.0; SPSS, Inc., Chicago, IL).","reviewer_rationale":"Descriptive statistics (mean ± SD for continuous; relative frequencies for categorical) with clear denominators and timepoints are appropriate for a single-arm case series, and the explicit decision not to perform between-group comparisons is methodologically appropriate. Follow-up was 100% complete, so missing data were not an issue. Minor concerns (inconsistent procedural-success figures: 99.3% vs 100%; per-center discretion in choosing cTTE vs cTCD) do not render the descriptive analysis inappropriate."}],"overall":{"domain_rationale":"This is a well-reported prospective, multicenter, single-arm case series (registered clinical trial, ChiCTR1900024036). All ten JBI items are judged Yes: explicit inclusion/exclusion criteria; standardized measurement (mandatory TEE diagnosis, defined cTTE/cTCD RLS thresholds and four-level grading); valid diagnostic methods; explicit statement of consecutive/complete enrollment of all eligible patients over a defined window; clear demographic and clinical baseline reporting (Tables 1-2); comprehensive outcome reporting with denominators and 100% follow-up completion; clear site information; and appropriate descriptive statistics. The only notable concerns are minor (no screening log, subjective shunt grading, small numeric inconsistency in the procedural-success rate, and the absence of a control group, which the authors acknowledge).","strengths":["Explicit, enumerated inclusion and exclusion criteria","Prospective multicenter design with a defined recruitment window (June 2019–September 2020)","Explicit statement that all eligible patients at each center were included, with the single statistical exclusion explained","Standardized diagnostic protocol: mandatory TEE for PFO confirmation and defined cTTE/cTCD four-level RLS grading with thresholds","100% completion of clinical and echocardiographic follow-up at fixed timepoints through 12 months","Detailed baseline demographics, clinical syndromes, and PFO morphology in Tables 1-2","Comprehensive outcome reporting (procedural success, complete occlusion, residual RLS, DRT, pericardial effusion, arrhythmia) with denominators","Appropriate descriptive statistical approach with no unjustified between-group comparisons"],"limitations":["Single-arm design without a parallel or randomized control group (acknowledged by the authors)","No screening log reported to externally verify the consecutive/complete enrollment statement","RLS severity grading is described by the authors as subjective, and the choice of cTTE vs cTCD was at each center's discretion","Minor internal inconsistency in procedural-success rate (99.3% in abstract/text vs 100% in Table 3)","Follow-up limited to 12 months, and efficacy for migraine/CS not assessed (acknowledged by the authors); systematic arrhythmia detection (Holter/loop recorder) was not performed for all patients"],"missing_information":["Screening/enrollment log and number of screened vs enrolled patients","Information on center-level recruitment distribution and operator experience","Procedural-success denominator reconciliation (99.3% vs 100%)","Systematic Holter-based arrhythmia surveillance data"],"unavailable_documents":["Original PDF could not be machine-parsed (binary file); the assessment is based on the complete extracted text layer, which preserved the tables (Tables 1-3) and figure captions"],"reviewer_override":"none","override_justification":""}},"Karagianni_2020":{"study_id":"Karagianni_2020","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"Single-center observational study of 282 consecutive patients who underwent PFO closure for cryptogenic cerebrovascular events (October 2006 to March 2014), with a nested matched case-control follow-up study (rCVE cases matched 1:2 to controls by sex and RoPE score). The appraised entity per the inclusion record is the BioSTAR-device subset (n=25).","design_actual":"Retrospective case series (single-arm) of consecutive PFO closure recipients; the BioSTAR subset is a subgroup of a mixed-device cohort (8 device types used). The BioSTAR recipients are not presented as a standalone case series; BioSTAR-specific data are limited to a Table 3 row and scattered statements.","n_participants":"BioSTAR subset n=25 (per the inclusion record and text 'Four out of 25 (16%) patients who used the BioSTAR device...'); Table 3 lists 24 (8.5%); the parent cohort is n=282; the discussion ('27 out of 29' closure rate) implies up to 29 BioSTAR implants were considered.","n_centers":"1 (Centrum for Adults with Grown-Up Congenital Heart Disease (GUCH), Sahlgrenska University Hospital/Ostra, Gothenburg, Sweden)","prospective_retrospective":"Retrospective (records-based identification of a 2006-2014 cohort, RoPE score calculated retrospectively, medical records reviewed in November 2018) with prospective elements (2015-2016 telephone contact and 2018 follow-up visits with contrast TTE and Holter ECG).","recruitment":"Consecutive (explicitly stated for the 282-patient parent cohort over a defined recruitment window, October 2006-March 2014); consecutiveness of the BioSTAR subset is not separately stated.","report_type_judgment":"Case series (the BioSTAR subgroup within a larger mixed-device case series; the report also includes a nested matched case-control comparison).","tool_eligibility_note":"The report is a mixed-device case series (8 device types, n=282); the inclusion record defines the appraised study as the BioSTAR-device subset only (n=25). The BioSTAR recipients are not described as a standalone case series: BioSTAR-specific data appear only in Table 3 rows and scattered statements, with internally inconsistent counts (24 in Table 3, 25 in the text, and '27 out of 29' closure rate in the Discussion) and no BioSTAR-specific demographics, clinical characteristics, or detailed follow-up results. This mixed-device reporting limits a BioSTAR-only appraisal; several checklist items are therefore assessed against the parent-cohort methods or marked Unclear."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Study population","exact_quote":"All patients had a c-CVE verified by a neurologist.","reviewer_rationale":"The indication for PFO closure is explicit: all patients had a cryptogenic cerebrovascular event verified by a neurologist and were discussed in a multidisciplinary dedicated PFO conference (neurologist, cardiologist, coagulation consultant, interventionist) before the procedure, following institutional selection guidelines described previously (refs 21-23). This provides clear inclusion criteria for the case series underlying the BioSTAR subset. However, the specific criteria that determined receipt of the BioSTAR device (as opposed to the other seven devices) are not predefined; the operator chose the device 'depending on the anatomy of the defect and the design of the device', which is a device-selection nuance rather than a formal eligibility criterion and is noted as a limitation."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 3, Follow-up (rCVE definition and residual-shunt grading); p. 2, Methods (contrast TEE); p. 3, Follow-up visit (contrast TTE)","exact_quote":"rCVE was defined as ischemic stroke or transient ischemic attack of undetermined cause by the ICD-10 codes for ischemic stroke I63 or I64 and for transient ischemic attack G45 given in medical records.","reviewer_rationale":"The condition and outcomes were measured with standardized methods applied to the cohort from which the BioSTAR subset is drawn: PFO detection by contrast TEE with injection during Valsalva and defined high/low-risk morphological criteria; residual shunting graded at contrast TEE (6 and 12 months) and contrast TTE as mild or large (>10 bubbles) with a second-observer adjudication in uncertain cases; rCVE ascertained by trained personnel from medical records using ICD-10 codes with imaging/ECG confirmation. These are standard, reproducible definitions. The authors note in the Limitations that two different shunt-detection methods (TEE and TTE) were used over follow-up, but they cite evidence that contrast TTE with agitated saline is as efficacious as contrast TEE for detecting atrial shunting, so this does not undermine reliability."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 2, Methods (contrast TEE, PFO risk classification); p. 3, Follow-up visit (contrast TTE with agitated saline, 48-h Holter ECG)","exact_quote":"The patients underwent contrast transesophageal echocardiography (TEE) for detecting PFO and its anatomical characteristics before the procedure.","reviewer_rationale":"PFO identification used validated methods: pre-procedural contrast TEE with contrast injection during Valsalva, a defined high-/low-risk PFO classification based on defect size, bubble count, Eustachian valve and atrial septal aneurysm, plus intraprocedural TEE guidance. Residual shunting at follow-up was assessed with contrast TTE using agitated saline (stated to be as efficacious as contrast TEE) and Holter ECG for arrhythmia detection. These are valid diagnostic methods and were applied within the cohort from which the BioSTAR subset derives; no BioSTAR-specific deviation is reported."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Unclear","evidence_location":"p. 2, Methods, Study population; p. 5, Table 3","exact_quote":"A total of 282 consecutive patients with PFO who were referred to our institution because of a c-CVE underwent PFO closure from October 2006 to March 2014.","reviewer_rationale":"Consecutive enrollment is explicitly stated for the parent cohort (282 consecutive patients, defined window October 2006-March 2014), and the BioSTAR recipients are drawn from that cohort. However, the BioSTAR-specific case series is not separately described as consecutive, and the reported BioSTAR counts are internally inconsistent (24 in Table 3, 25 in the text 'Four out of 25', and an implied denominator of 29 from the '27 out of 29' closure-rate statement in the Discussion). This makes it unclear whether the BioSTAR subset represents all consecutive BioSTAR recipients in the window or a subset (e.g., those with retrievable records)."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Unclear","evidence_location":"p. 3, Follow-up; p. 5, Results (BioSTAR statement)","exact_quote":"No patients were lost to follow-up regarding mortality.","reviewer_rationale":"The parent cohort achieved 100% mortality follow-up and seven patients with unavailable hospital records at follow-up were retained in the baseline analysis, indicating near-complete follow-up. For the BioSTAR subset, however, the phrasing 'and whose medical records could be collected' implies that records were not available for all BioSTAR recipients, and the inconsistent sample sizes (24 vs 25, with an implied 29 in the closure-rate statement) preclude confirmation that all eligible BioSTAR patients were included with exclusions explained. Complete inclusion of the BioSTAR case series therefore cannot be verified from the report."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Unclear","evidence_location":"p. 4, Table 1 (baseline characteristics of the parent cohort); p. 5, Table 3 (device frequencies only)","exact_quote":"The baseline characteristics of the study population at index CVE are shown in Table 1.","reviewer_rationale":"Demographics (age 48±11.7 years, 37.6% women, RoPE score, smoking, hypertension, diabetes, hyperlipidemia, CAD, prior CVE) are clearly reported for the 282-patient parent cohort in Table 1. No BioSTAR-specific demographics (age, sex, comorbidities) are reported separately; Table 3 provides only device counts, rCVE and residual-shunt frequencies. Because the appraised case series is the BioSTAR subset, its demographic profile cannot be derived from the report, so the reporting of demographics for the participants under appraisal is insufficient to judge."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Unclear","evidence_location":"p. 2, Methods (PFO risk classification); p. 4, Table 1 (prior CVE, imaging-verified cortical infarction, RoPE score)","exact_quote":"A PFO was defined as high or low risk depending on the size of the defect, the number of bubbles moving through the septum, the presence of a prominent Eustachian valve, and atrial septal aneurysm.","reviewer_rationale":"Clinical information (RoPE score, prior CVE in 35.8%, imaging-verified cortical infarction in 53.2%, smoking, atrial fibrillation) and PFO morphological risk criteria are clearly reported for the parent cohort, and the outcome profile for the BioSTAR device (4 rCVEs, no residual shunting in those patients) is given. However, BioSTAR-specific clinical information — PFO morphology, baseline RLS grade, and eligibility characteristics for the 25 BioSTAR recipients — is not reported separately, so the clinical profile of the BioSTAR case series itself is not clearly described."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Unclear","evidence_location":"p. 5, Table 3 (BioSTAR row) and Results; p. 7, Discussion (closure rate)","exact_quote":"Four out of 25 (16%) patients who used the BioSTAR device (NMT Medical, Boston, MA, USA) and whose medical records could be collected suffered from rCVEs, none of whom had residual shunting or could identify any other major risk factor for suffering from a rCVE.","reviewer_rationale":"Some BioSTAR-specific outcomes are reported: 4 rCVEs (16%), residual shunt in 2 (6.9%) per Table 3, none of the rCVE patients having residual shunting, and a high closure rate ('27 out of 29'). These data points are useful, but the outcome reporting is fragmented and internally inconsistent — Table 3 gives a BioSTAR frequency of 24 while the text says 25, and the closure-rate denominator (29) implies a third figure. BioSTAR-specific time-to-event, complications, arrhythmia, medication, and follow-up visit results are not separated from the mixed-device cohort, so the outcomes of the BioSTAR case series are not clearly and completely reported."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 2, Methods, Study population; p. 1, author affiliations; p. 4, Results (recruitment window)","exact_quote":"Our center is the only one in a region of 1.7 million inhabitants where this procedure is performed.","reviewer_rationale":"The presenting site is clearly characterized: a single tertiary center — the GUCH unit at Sahlgrenska University Hospital/Ostra, Gothenburg, Sweden, described as the only center performing the procedure in a region of 1.7 million inhabitants. The recruitment window (October 2006 to March 2014) and the multidisciplinary PFO conference setting are also reported. This provides clear site/clinic demographic information, including center type, country, and recruitment period."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 4, Methods, Statistical analysis; p. 6, Table 4 (case-control comparisons)","exact_quote":"All data analyses were performed using SPSS version 20.0 (IBM SPSS, Armonk, NY, USA) and STATA (College Station, TX, USA). Continuous variables are expressed as mean ± SD or median, and categorical variables as counts and percentages. The p values of the Fisher's exact test were considered significant if 0.05. Survival analyses are shown with Kaplan–Meier curves.","reviewer_rationale":"Statistical methods are appropriate for a case series: descriptive summaries (mean ± SD, median, counts/percentages), Kaplan-Meier survival analysis with censoring at events/death for the primary end point (free from recurrent CVE), Fisher's exact tests and risk ratios with 95% CIs (e.g., residual shunting RR 2.9, 95% CI 1.4-6.1), and a described matched case-control comparison. Denominators reflect available data, and the authors acknowledge low power for device-specific comparisons given the small subgroup numbers. No inappropriate or unsupported analytic claims were identified."}],"overall":{"domain_rationale":"The report is a single-center retrospective case series of 282 consecutive PFO closures for cryptogenic CVE with a nested matched case-control substudy; the entity under appraisal is the BioSTAR-device subgroup (n≈25). The underlying series has clear indication criteria (c-CVE verified by a neurologist, multidisciplinary PFO conference, institutional selection guidelines), standard and valid diagnostic methods (contrast TEE with Valsalva and defined PFO/ASA criteria, contrast TTE at follow-up, ICD-10-based rCVE definition with imaging confirmation), explicit consecutive enrollment over a defined window, clear site reporting, and appropriate statistics. However, the BioSTAR subgroup is not reported as a standalone case series: its demographics, clinical characteristics, and follow-up outcomes are largely absent, the BioSTAR counts are internally inconsistent (24/25/29), and complete/consecutive inclusion of BioSTAR recipients cannot be verified. These reporting gaps drive items 4-8 to Unclear; items 1-3 and 9-10 are judged favourably because the methods described at the cohort level clearly apply to the BioSTAR participants.","strengths":["Explicitly reported consecutive enrollment of the parent cohort over a defined recruitment window (October 2006-March 2014) in a single, regionally exclusive center.","Clear indication criteria: c-CVE verified by a neurologist, multidisciplinary PFO conference discussion, and institutional selection guidelines.","Standard, valid diagnostic methods: contrast TEE with Valsalva and defined high/low-risk PFO and atrial septal aneurysm criteria; residual shunt graded (>10 bubbles) with second-observer adjudication; ICD-10-based rCVE definition with imaging confirmation.","Long follow-up (mean 8.4 ± 2 years) with 100% mortality follow-up; Kaplan-Meier survival analysis with explicit censoring and risk ratios with 95% CIs.","Some BioSTAR-specific outcome data are presented (4 rCVEs, residual shunt in 2, high closure rate) with a sensitivity analysis excluding BioSTAR recipients, supporting the authors' device-specific conclusion.","Clear reporting of the presenting site, country, center type, and recruitment period."],"limitations":["The BioSTAR case series is not described as a standalone series; BioSTAR-specific data are limited to Table 3 rows and scattered statements within a mixed-device cohort (8 devices).","Internally inconsistent BioSTAR sample sizes (24 in Table 3, 25 in text, implied 29 from the '27 out of 29' closure-rate statement) leave the true n and denominators unclear.","BioSTAR-specific demographics, PFO morphology, baseline RLS grade, complications, arrhythmia, and follow-up visit results are not separately reported.","Consecutive and complete inclusion of the BioSTAR subset cannot be confirmed; the phrase 'whose medical records could be collected' suggests records were unavailable for some recipients.","Retrospective, records-based design; two different shunt-detection methods were used over follow-up; imaging-driven outcome ascertainment may have missed silent cerebrovascular events (acknowledged by the authors); 48-h Holter monitoring may under-detect paroxysmal atrial fibrillation.","BioSTAR-specific device-selection criteria are not predefined; the operator chose the device based on anatomy and device design."],"missing_information":["BioSTAR-subset baseline demographics (age, sex, comorbidities).","BioSTAR-subset clinical characteristics (PFO morphology, baseline RLS/shunt grade, eligibility characteristics).","The exact BioSTAR sample size (24 vs 25 vs 29) and the reason for the discrepancies.","Confirmation that all consecutive BioSTAR recipients in the window were included (consecutive/complete inclusion of the subset).","BioSTAR-specific outcomes beyond rCVE and residual-shunt counts (time-to-event, complications, arrhythmia, medication, follow-up visit results).","Predefined criteria governing BioSTAR device selection."],"unavailable_documents":[],"reviewer_override":"none","override_justification":""}},"Lin_2022":{"study_id":"Lin_2022","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"Prospective single-center, phase III clinical study (one of the multi-center research units of a national Phase III trial of the Mallow biodegradable PFO occluder); echocardiographic study, clinical trial registration ChiCTR.","design_actual":"Single-arm prospective case series (no comparator group) of 16 patients with PFO-related complications undergoing transcatheter closure with the Mallow biodegradable occluder, with 12-month follow-up.","n_participants":"16","n_centers":"1 (this report describes a single center — The First Affiliated Hospital of Shandong First Medical University & Shandong Provincial Qianfoshan Hospital, Jinan, China; it is stated to be one unit of a multi-center Phase III trial)","prospective_retrospective":"Prospective","recruitment":"Selected/enrollment-based within a defined recruitment window (June–August 2020); consecutive enrollment not explicitly stated and no screening log reported","report_type_judgment":"Case series (single-arm phase III clinical trial)","tool_eligibility_note":"Single-arm prospective study of 16 participants without a comparison arm; appropriately appraised with the JBI Case Series checklist. No design concern precluding use of the tool."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2–3, Materials and methods, Study population (enrollment and exclusion criteria)","exact_quote":"The enrollment criteria were as follows: (1) PFO diagnosed with a medium-large right-to-left shunt (RLS) by imaging; (2) age ≥ 16 years; (3) voluntary participation in human clinical trials with signed informed consent; and (4) occult ischemic stroke, migraine, or unexplained dizziness.","reviewer_rationale":"The report explicitly lists four inclusion criteria (PFO with medium-large RLS on imaging, age ≥16 years, informed consent, and indication of occult ischemic stroke, migraine, or unexplained dizziness) and separately lists seven exclusion criteria (e.g., identifiable cause of cerebral embolism, known-cause migraine, antiplatelet/anticoagulation contraindication, venous/intracardiac thrombosis, pregnancy, pulmonary hypertension or PFO as survival channel, massive cerebral infarction within 4 weeks). Both sets of criteria are specific and measurable, satisfying the requirement for clear criteria for inclusion in the case series."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 3–5, Methods (Research process; Preoperative diagnostic criteria for PFO imaging; Postoperative echocardiography and contrast TCD evaluation)","exact_quote":"The trial course was ≥ 12 months with a preoperative diagnostic flow involving transthoracic echocardiography (TTE)–contrast TTE (cTTE)/contrast transcranial Doppler (cTCD)–transesophageal echocardiography (TEE)–contrast TEE (cTEE)","reviewer_rationale":"PFO and right-to-left shunt (RLS) were measured with standardized, pre-defined imaging methods applied on a fixed schedule: TTE at 48 h, 1, 3, 6, and 12 months; cTCD at 6 and 12 months; and TEE at 12 months. Quantitative RLS grading (grades 0–III) based on microbubble counts was specified for cTTE and cTCD, HIT-6 defined migraine severity grading, and RoPE scoring was used for stroke patients. The condition was therefore measured in a standard, reliable way for all participants using consistent criteria and instruments (Philips EPIQ 7C ultrasound instrument and an 8080 TCD device)."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 4, Methods, Preoperative diagnostic criteria for PFO imaging and Contrast transcranial Doppler","exact_quote":"RLS was mainly assessed using cTTE or cTEE.","reviewer_rationale":"PFO/RLS identification used well-established diagnostic modalities — TTE, contrast TTE, contrast transcranial Doppler, TEE, and contrast TEE — with a defined activated-saline contrast protocol, grading criteria, and Valsalva provocation. All 16 participants received at least one contrast-based identification method (case 6 both cTCD and cTTE; cases 5, 7, 13 cTCD alone; the remaining 12 cTTE alone), and all had TEE/cTEE, so valid identification methods were used for all participants."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Unclear","evidence_location":"p. 2, Materials and methods, Study population","exact_quote":"We selected a total of sixteen patients who had been diagnosed with PFO and admitted to the Department of Cardiovascular Surgery of the First Affiliated Hospital of Shandong First Medical University (Shandong Provincial Qianfoshan Hospital) between June and August 2020.","reviewer_rationale":"A defined recruitment window (June–August 2020) is reported, which is compatible with consecutive enrollment, but the report uses the verb 'selected' and contains no explicit statement that all patients meeting criteria during that window were enrolled consecutively. No screening log or recruitment flow is provided. In line with the appraisal rules, absence of reporting is not treated as evidence that enrollment was non-consecutive, but there is also no direct evidence of consecutive inclusion; hence the response is Unclear."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Unclear","evidence_location":"p. 7, Results, Postoperative serious adverse events; p. 2, Materials and methods, Study population","exact_quote":"None of the 16 patients were lost to follow-up, and all had regular outpatient follow-ups according to the trial procedures.","reviewer_rationale":"The report confirms complete follow-up of all enrolled participants (none lost), which addresses follow-up completeness. However, it does not report the number of eligible patients assessed, a screening log, or any accounting of eligible patients who were not included, so whether the case series included all eligible individuals from the source population cannot be verified. Complete inclusion is therefore Unclear."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Yes","evidence_location":"p. 5, Results, Patient baseline characteristics; Table 1, p. 6","exact_quote":"Altogether 16 patients (9 women and 7 men) were admitted to our hospital from June to August 2020, with a mean age of 45.69 ± 16.21 years.","reviewer_rationale":"Demographic reporting is clear and detailed: aggregate sex distribution and mean age (45.69 ± 16.21 years) are given, and Table 1 provides per-case sex and age for all 16 patients, together with personal history and combined diseases (hypertension n=2, diabetes mellitus n=2, hyperlipidemia n=1, smoking n=1, drinking n=4; no CHD, CKD, or COPD). This satisfies clear reporting of participant demographics."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Yes","evidence_location":"p. 5, Results, Patient baseline characteristics; Table 1, p. 6","exact_quote":"Twelve patients had migraine (cases 4, 6, and 16 with combined occult stroke; case 9 with a missing field of view; and cases 2, 8, 9, 11, and 12 with aura migraine) and 2 patients experienced dizziness.","reviewer_rationale":"Clinical information is comprehensively reported both in narrative and in Table 1: indications (5 occult ischemic stroke, 12 migraine, 2 dizziness), per-case migraine subtype and stroke details, RoPE scores (80% [4/5] of stroke patients with RoPE ≥7), mean preoperative HIT-6 score (58.3 ± 14.4), and per-case PFO morphology on TEE (PFO tunnel length, left/right atrial orifice size, secondary septal thickness, ASA, color Doppler shunt) and cTEE/cTTE/cTCD RLS grades at rest and after Valsalva. This is clear reporting of baseline clinical and anatomical information."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Yes","evidence_location":"p. 7–9, Results (Interventional closure procedures; Postoperative serious adverse events; Improvement of clinical symptoms; Postoperative imaging characteristics; Residual RLS); Figures 2–6","exact_quote":"The immediate success rate of occlusion was 100% and none showed any intracardiac thrombosis, arrhythmia, or other complications.","reviewer_rationale":"Outcomes and follow-up results are reported in detail across defined timepoints: immediate procedural success 100%; occlusion success 87.5% at 6 months (one grade II and one grade III RLS by cTCD) and 100% overall at 12 months (all grade 0 at rest; 12 grade 0 and 4 grade I after Valsalva); residual left-to-right shunt at the occluder edge in case 11 on color Doppler TTE at 12 months; occluder degradation documented by serial TTE and 12-month TEE; HIT-6 scores at 1, 3, 6, and 12 months; migraine outcomes (33.3% complete remission, 83.3% overall efficacy); two SAEs deemed unrelated to occlusion; and absence of device thrombosis, arrhythmia, and vascular complications. None lost to follow-up. Outcomes are therefore clearly reported for all cases."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 1 (author affiliations); p. 2, Materials and methods, Study population; p. 5, Results","exact_quote":"We selected a total of sixteen patients who had been diagnosed with PFO and admitted to the Department of Cardiovascular Surgery of the First Affiliated Hospital of Shandong First Medical University (Shandong Provincial Qianfoshan Hospital) between June and August 2020.","reviewer_rationale":"The presenting site is clearly identified: a single tertiary academic hospital in Jinan, China (First Affiliated Hospital of Shandong First Medical University / Shandong Provincial Qianfoshan Hospital), with specific departments involved (Cardiovascular Surgery; Department of Medical Ultrasound; Department of Anesthesiology) and a multidisciplinary team (cardiovascular surgery, interventional department, neurology, echocardiography). The country (China) and recruitment period (June–August 2020) are reported. This satisfies clear reporting of the presenting site(s)/clinic(s) demographic information."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 5, Statistical analysis; p. 8, Results (Postoperative imaging characteristics)","exact_quote":"Data analysis was performed using SPSS 20.0. Continuous variables with a normal distribution were expressed as mean ± standard deviation.","reviewer_rationale":"Statistical methods are appropriate for a case series: descriptive summaries (mean ± SD, medians with IQR for non-normal data), Student's t-test, repeated-measures ANOVA for serial within-subject data (e.g., HIT-6 over time), Mann–Whitney U and chi-squared tests where relevant, with statistical significance set at p \u003c 0.05. Denominators and timepoints are specified, and missing/unusable data were handled explicitly (e.g., the three ASA patients with large occluders were excluded from the occluder diameter/thickness degradation analysis because of measurement heterogeneity). The analytic approach is commensurate with the descriptive, single-arm design."}],"overall":{"domain_rationale":"The study is a prospective single-center, single-arm phase III series (n=16) that performs well on most JBI case-series items. Q1–Q3 are met: clear inclusion/exclusion criteria were defined, and PFO/RLS was identified and measured with standardized, valid imaging methods (TTE/cTTE/cTCD/TEE/cTEE) with explicit grading criteria and a fixed follow-up schedule. Q6–Q10 are also met: demographic and per-case clinical data are tabulated (Table 1), outcomes at 48 h, 1, 3, 6, and 12 months are reported with defined success definitions, the presenting center, country, and recruitment window are clearly stated, and statistical methods are appropriate for the descriptive design. The principal uncertainties are Q4 and Q5: the report describes 'selected' patients recruited over a defined 3-month window but provides no explicit statement of consecutive enrollment and no screening log or accounting of eligible non-included patients, so consecutive and complete inclusion cannot be confirmed. These are reporting gaps rather than demonstrated methodological failures.","strengths":["Clear and specific eligibility criteria (four inclusion and seven exclusion criteria) for PFO closure with the device.","Prospective design with defined recruitment window (June–August 2020) and 12-month trial course.","Standardized, valid imaging identification and measurement (TTE, cTTE, cTCD, TEE, cTEE) with quantitative RLS grading and a fixed follow-up schedule.","Comprehensive per-case reporting of demographics, indications, comorbidities, and PFO morphology (Table 1).","Complete follow-up: none of the 16 patients were lost to follow-up.","Outcomes clearly reported at defined timepoints (immediate, 6-month, and 12-month occlusion success; residual shunt; complications; HIT-6; occluder degradation), with appropriate descriptive/inferential statistics."],"limitations":["Small (n=16), single-center sample; the report explicitly acknowledges the small sample size and short follow-up.","Consecutive and complete inclusion not documented (no screening log, no account of eligible patients not enrolled); enrollment described as 'selected'.","TEE was not performed at all follow-up timepoints, and TTE acoustic-window limitations may have missed information (acknowledged by the authors).","Outcome assessment does not mention blinding or independent adjudication; two serious adverse events were judged unrelated without a formal adjudication process described."],"missing_information":["Explicit confirmation of consecutive enrollment within the recruitment window (Q4).","Screening-log data and accounting of all eligible patients from the source population (Q5).","Number of patients screened vs. enrolled and reasons for non-inclusion/exclusion at the local site.","Details of independent/blinded outcome adjudication."],"unavailable_documents":[],"reviewer_override":"none","override_justification":""}},"Ussia_2009":{"study_id":"Ussia_2009","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"Single-centre experience of percutaneous PFO closure with a bioabsorbable occluder device (BioSTAR), reported as an observational review of institutional experience (title: \"Percutaneous Closure of Patent Foramen Ovale with a Bioabsorbable Occluder Device: Single-Centre Experience\").","design_actual":"Single-arm, single-centre observational case series of 23 patients treated with the BioSTAR bioabsorbable device for PFO closure, drawn from 100 patients who underwent PFO closure at the institution within a defined 12-month window (September 2007 to September 2008).","n_participants":"23 (15 female, mean age 47 ± 14 years)","n_centers":"1 (Division of Cardiology, Ferrarotto Hospital, University of Catania, Italy)","prospective_retrospective":"Unclear (not explicitly stated; report of institutional experience within a defined window with scheduled follow-up timepoints, so a prospective protocol is implied but not confirmed)","recruitment":"Selected (device choice was at operator discretion among 100 PFO-closure patients; the 23 BioSTAR patients are a device-selected subgroup; consecutive/complete enrollment of the 23 is not explicitly stated)","report_type_judgment":"Case series (single-arm cohort of a device-treated population)","tool_eligibility_note":"Appropriately assessed with the JBI case series tool. Design concern documented: the 23 patients are a device-selected subgroup of a larger institutional series (23 of 100 PFO closures), and consecutive/complete inclusion is not explicitly established; device selection was operator-dependent based on clinical features and interatrial septum anatomy."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Study Population; p. 3, Procedure and Follow-Up (device exclusion criterion)","exact_quote":"Nine of these (39%) had history of prior CVA due to paradoxical embolism (6 TIA, 3 strokes), while fourteen patients (61%) were symptomatic for migraine headaches with signs of subcortical-ischemia at cerebral magnetic resonance imaging. ... an exclusion criteria for BioSTARVR implantation was the presence of a large PFO with atrial septal aneurism (type B and type C) [17].","reviewer_rationale":"Eligibility is described in terms of indications for PFO closure (recurrent CVA due to paradoxical embolism, or migraine with signs of subcortical ischemia on cerebral MRI), the diagnostic pathway (c-TCD and/or c-TOE criteria for RLS), and a device-specific exclusion criterion (large PFO with atrial septal aneurysm type B/C). A formal enumerated inclusion/exclusion checklist is not given and device selection was at operator discretion, but the criteria defining who was included are sufficiently clear to satisfy this item."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Study Population (RLS diagnosis and shunt grading)","exact_quote":"The presence of a RLS was diagnosed by contrast-enhanced transcranial Color-Doppler (c-TCD) of middle, anterior and posterior cerebral artery at rest and after Valsalva manoeuvre, using an Acuson Sequoia 512 (Siemens, Mountain View, CA, USA), with injection of a mixture of 9 ml of polygeline and 1 ml of air, according to standard methods [18,19]. ... All examinations were done by a single experienced operator.","reviewer_rationale":"The condition (PFO/RLS) was measured with a standardized, explicitly described contrast c-TCD protocol (defined contrast mixture, rest and Valsalva, microbubble counting), with shunt graded per published criteria (trivial/low 1-10 MB, medium >10 MB without curtain effect, high curtain effect). Use of a single experienced operator supports reliability. The same approach was applied to the case-series participants, though residual-shunt grading at follow-up used the same c-TCD methodology."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 2, Methods, Study Population (c-TCD, c-TOE, c-TTE, TTE, ASA criteria)","exact_quote":"When contrast trans-oesophageal echocardiogram (c-TOE) could not be performed, contrast trans-thoracic echocardiogram (c-TTE) was carried out. ... All patients underwent a basal trans-thoracic echocardiogram (TTE) the day before the procedure, as part of a standard protocol followed in our Institution in order to assess cardiac function, rule out acquired or congenital cardiac diseases and for detecting and characterize atrial septal aneurysm (ASA) [17].","reviewer_rationale":"Valid, well-established identification methods are documented for all participants: contrast-enhanced transcranial Doppler (c-TCD), contrast trans-oesophageal echocardiography (c-TOE), and contrast transthoracic echocardiography (c-TTE) as a fallback, plus TTE with explicit Hanley criteria for atrial septal aneurysm and TOE with Color-Doppler/agitated saline. The distribution of diagnostic methods used (c-TCD 4, c-TCD+c-TOE 15, c-TOE 4) confirms application across all 23 participants."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Unclear","evidence_location":"p. 2, Methods, Study Population; p. 3, Procedure and Follow-Up (operator-based device selection)","exact_quote":"From September 2007 to September 2008, 100 patients underwent PFO closure at our Institution. ... Among these 100 patients, twenty-three (15 female, mean age 47 ± 14 years) were treated with BioSTARVR device (NMT Medical Inc., Boston, Mass).","reviewer_rationale":"A defined recruitment window is given and the 23 patients are plausibly the complete set of BioSTAR-treated patients in that window, but consecutive enrollment is not explicitly stated and no screening log is reported. Moreover, device assignment was operator-dependent (\"The choice of the device was demanded to the operator, based on clinical features of patients and interatrial septum anatomy\"), so the series is a selected device subgroup of the 100-patient source population rather than demonstrably consecutive. A defensible Yes or No is not possible."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Unclear","evidence_location":"p. 3, Procedure and Follow-Up (device exclusion criterion); p. 4, Results (retrieval/replacement case)","exact_quote":"an exclusion criteria for BioSTARVR implantation was the presence of a large PFO with atrial septal aneurism (type B and type C) [17].","reviewer_rationale":"The only reported exclusion is the anatomical device criterion (large PFO with ASA type B/C). It is not stated that all BioSTAR-eligible patients in the window were included, and no selection log explains why 77 of the 100 PFO-closure patients received other devices. The one procedural failure (28-mm BioSTAR retrieved and replaced with a 30-mm Amplatzer) is described transparently, but overall completeness of inclusion of the eligible source population cannot be confirmed."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Yes","evidence_location":"p. 2, Table I (Patients Baseline Characteristics)","exact_quote":"Baseline characteristics of these patients are summarized in Table I.","reviewer_rationale":"Table I reports age (47 ± 14 years), sex (15 female, 65%), LVEF (58 ± 7%), indication mix (TIA 6 [26%], Stroke 3 [13%], Migraine headache 14 [61%]), haematological disorder (1 [4%]), and nickel allergy (8 [35%]). This is clear and quantified demographic reporting for a case series, exceeding minimum age/sex expectations."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Yes","evidence_location":"p. 2, Table I (Indication, Diagnosis, Atrial septal aneurysm) and Methods, Study Population","exact_quote":"One patient had heterozygosis for sickle-cell-anaemia. Nickel allergy, diagnosed by clinical history and patch test, was present in eight patients (35%).","reviewer_rationale":"Baseline clinical information is clearly reported: indications (prior CVA due to paradoxical embolism [6 TIA, 3 strokes] vs migraine with MRI signs of subcortical ischemia, eight with aura per the abstract), diagnostic method distribution (c-TCD 4, c-TCD and c-TOE 15, c-TOE 4), atrial septal aneurysm in 7 (30%), nickel allergy (8 [35%]) and one sickle-cell heterozygote. PFO morphology (e.g., large type B/C PFO, long tunnel) is described in the procedural narrative. Only the baseline RLS shunt-grade distribution is defined methodologically but not tabulated per participant, which does not undermine the otherwise clear clinical reporting."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Yes","evidence_location":"p. 4, Results and Tables II-III; p. 5, Table IV (Complications at Follow-Up)","exact_quote":"The c-TCD performed at six months resulted negative for residual paradoxical shunt in 15 cases (79%), while in four patients a trivial microbubbles passage was noted. ... Nine patients (41%) underwent TOE at 12 month follow-up.","reviewer_rationale":"Outcomes are reported with explicit denominators and timepoints: device success 22/23 (96%), procedural success, procedural/fluoroscopy times, in-hospital stay, TTE at 30 days (22/23, 100%), c-TCD at 6 months (19/23, 86%; negative in 15 [79%], trivial shunt in 4 [21%]), TOE at 12 months (9/23, 41%; device well positioned, low profile, no thrombus/residual shunt). Complications (Table IV) include one non-cardiac death, one haemorrhagic stroke, AF and PSVT (each 1), with zero device dislodgement, thrombus, erosions, or recurrent thromboembolism. This constitutes clear outcome and follow-up reporting."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 1, Title page (author affiliation); p. 2, Methods, Study Population (recruitment window)","exact_quote":"Division of Cardiology, Ferrarotto Hospital, University of Catania, Italy","reviewer_rationale":"The presenting site is clearly identified: a single named centre (Ferrarotto Hospital, University of Catania, Italy), department (Division of Cardiology), country, and the recruitment window (September 2007 to September 2008). The title explicitly states \"Single-Centre Experience\", and operator information is given for the diagnostic examinations (a single experienced operator for c-TCD). This is adequate site/setting reporting for a single-centre case series."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 3, Statistical Analysis; p. 4, Tables II-III; p. 5, Table IV","exact_quote":"Continuous variables are summarized by mean and standard deviation (SD). Estimates of occurrence of events are expressed as percentage. All data were processed using the Statistical Package for Social Sciences, version 15 (SPSS, Chicago, IL, USA).","reviewer_rationale":"Descriptive statistics (means ± SD, percentages with explicit denominators and timepoints, e.g., 19/23 at 6 months, 9/23 at 12 months) are appropriate for a small case series and no inappropriate inferential claims are made. Minor reporting inconsistencies exist but do not render the analysis inappropriate: the text states \"overall procedural success was 96%\" while Table II lists \"Procedural success 23 (100%)\" (the 100% presumably refers to closure being achieved after Amplatzer rescue), and the extracted Table III percentage for TOE is garbled (\"TOE 9 4\", consistent with the text's 41%)."}],"overall":{"domain_rationale":"This single-centre case series of 23 patients treated with the BioSTAR bioabsorbable occluder for PFO closure reports clear inclusion criteria (indications, diagnostic criteria, device exclusion), standardized and validated condition measurement and identification (c-TCD, c-TOE/c-TTE with predefined shunt grading and a single experienced operator), well-tabulated demographics and clinical information, clear outcome and follow-up reporting with denominators and timepoints, adequate site information, and appropriate descriptive statistics (Q1-Q3, Q6-Q10 all Yes). Its principal methodological weakness is the absence of explicit evidence for consecutive and complete inclusion (Q4, Q5 Unclear): the 23 patients were an operator-selected device subgroup of 100 PFO closures in the window, no screening/selection log is reported, and 12-month TOE follow-up was incomplete (41%). The small, selected sample means the favourable safety/efficacy findings should be interpreted with caution.","strengths":["Standardized diagnostic protocol for RLS (c-TCD with defined agitated-saline mixture, rest and Valsalva, predefined shunt grading, single experienced operator)","Predefined primary endpoints (procedural success; device efficacy at 6 and 12 months defined as no residual shunt on c-TCD without complications)","Detailed tabular reporting of baseline demographics, procedural data, follow-up results, and complications with explicit denominators and timepoints","Defined single centre and recruitment window (Ferrarotto Hospital, Catania; September 2007 to September 2008)","Transparent reporting of the one procedural failure (device retrieval/replacement) and all follow-up complications including a non-cardiac death"],"limitations":["Small sample size (n=23)","Device selection at operator discretion within a larger institutional series (23 of 100 PFO closures), so consecutive and complete inclusion is not established","Incomplete follow-up at 12 months (TOE only in 9/23, 41%; c-TCD in 19/23 at 6 months) with reasons not stated for missing examinations","Minor internal reporting inconsistencies (text 'overall procedural success was 96%' vs Table II 'Procedural success 23 (100%)'; garbled TOE percentage in Table III text layer)","Prospective vs retrospective design is not stated; possible selection and referral bias inherent to a single-centre device experience"],"missing_information":["Explicit statement of consecutive enrollment and completeness of the BioSTAR cohort","Screening/selection log or reasons why 77 of 100 PFO-closure patients received other devices","Reasons for loss to follow-up at 6-month c-TCD (19/23) and 12-month TOE (9/23)","Baseline RLS shunt-grade distribution (grades defined but not tabulated per participant)","Prospective/retrospective design designation"],"unavailable_documents":["None; full extracted text was provided and was complete. The PDF binary could not be text-parsed directly, but the text layer was sufficient to verify all narrative, tables, and figures cited."],"reviewer_override":"none","override_justification":""}},"Van den Branden_2009":{"study_id":"Van den Branden_2009","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"Prospective observational single-centre study of consecutive patients undergoing percutaneous PFO closure with a new bioabsorbable septal repair implant (BioSTAR); short-term (1-day and 1-month) safety and efficacy.","design_actual":"Single-arm prospective case series/cohort (n=35) reporting procedural success, complications, and residual shunt at day 1 and 1 month.","n_participants":"35 (21 female, mean age 47.9 ± 10.8 years); 33 (97%) with 1-month follow-up","n_centers":"1 (St. Antonius Hospital, Nieuwegein, The Netherlands)","prospective_retrospective":"Prospective (authors: \"In our prospective observational study\")","recruitment":"Consecutive (explicit: \"All consecutive patients... between November 2007 and July 2008, were included. No other closure devices were implanted during this period.\")","report_type_judgment":"Case series (single-arm cohort)","tool_eligibility_note":"Appropriately assessed as a case series: single-arm, prospective, consecutive inclusion with a defined recruitment window and no concurrent alternative-device arm."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Study Population","exact_quote":"All consecutive patients, who underwent a percutaneous closure of a symptomatic PFO in our centre between November 2007 and July 2008, were included. No other closure devices were implanted during this period. ... A PFO was defined as symptomatic in patients who suffered a cryptogenic cerebral ischemic event or decompression illness in the presence of a PFO. In case of presumed paradoxical embolism, other sources of systemic emboli were ruled out.","reviewer_rationale":"Eligibility is explicitly defined by indication (symptomatic PFO: cryptogenic cerebral ischemic event or decompression illness), by exclusion of competing device use during the window, and by a precise recruitment period. The device-selection rule (one-size-fits-all 28 mm, larger for long-tunnel PFO) also defines the intervention. These constitute clear, reportable inclusion criteria rather than a convenience sample."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Study Population and Outcome, Complications, and Efficacy","exact_quote":"At the outpatient clinic, the PFO was diagnosed by standardized contrast transthoracic (cTTE) or transoesophageal echocardiography (cTEE) with spontaneous or provokable right-to-left shunt, using 10 mL of blood- and air-mixed saline, injected in the right antecubital vein.","reviewer_rationale":"The PFO diagnosis was made with a standardized, explicitly described contrast echocardiography protocol (cTTE/cTEE, Valsalva or spontaneous right-to-left shunt, fixed agitated-saline volume and injection route), and an ASA definition (protrusion ≥10 mm) is provided. The same standardized cTTE protocol with Valsalva was applied at outcome timepoints (day 1 and 1 month), so the condition was measured consistently across all included participants."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 2, Methods, Outcome, Complications, and Efficacy","exact_quote":"The efficacy of PFO closure was based on the presence of a residual shunt, using cTTE both with and without the Valsalva manoeuvre. Microbubbles were counted in the left atrium within three cardiac cycles after right heart opacification. ... Two independent physicians performed the echocardiographic end-point analysis.","reviewer_rationale":"Valid, reproducible identification methods are documented: contrast TTE/TEE with Valsalva for diagnosis, a quantitative bubble-count grading scale (small \u003c30, moderate 30–100, severe >100) for residual shunts, and independent duplicate echocardiographic endpoint analysis. The authors also cite prior validation of excellent inter-observer variability for their grading scale, supporting reliability."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Yes","evidence_location":"p. 1, Abstract, Methods; p. 2, Methods, Study Population","exact_quote":"All 35 consecutive patients (21 female, mean age 47.9 6 10.8 years), who underwent a percutaneous PFO closure between November 2007 and July 2008, were included.","reviewer_rationale":"Consecutive inclusion is stated explicitly in both the abstract and the Methods, with a defined recruitment window (November 2007–July 2008). This is direct evidence of consecutive enrolment rather than an inferred or selected sample."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Yes","evidence_location":"p. 2, Methods, Study Population","exact_quote":"All consecutive patients, who underwent a percutaneous closure of a symptomatic PFO in our centre between November 2007 and July 2008, were included. No other closure devices were implanted during this period.","reviewer_rationale":"The statement that all patients undergoing the procedure in the period were included, together with the explicit assertion that no other closure devices were implanted during the window, indicates complete capture of the eligible source population at the centre. Follow-up was also nearly complete (33/35, 97%), with reasons given for the two missing echocardiograms. No screening log is reported, but the explicit complete-inclusion statements support a Yes."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Yes","evidence_location":"p. 3, Table I (Baseline Characteristics); p. 3, Results, Patient and Closure Characteristics","exact_quote":"In total, 35 patients (21 female, mean age 47.9 6 10.8 years) underwent a percutaneous closure of a PFO with the bioabsorbable device.","reviewer_rationale":"Demographics are comprehensively reported: number, mean age ± SD, sex, BMI, systolic/diastolic blood pressure, and vascular risk factors (smoking, diabetes, arterial hypertension, hypercholesterolemia, family history) in Table I. This exceeds the minimum age/sex reporting expected for a case series."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Yes","evidence_location":"p. 3, Table I (PFO characteristics and indication for closure); p. 3, Results, Patient and Closure Characteristics","exact_quote":"Thirty four patients (97%) had a history of a cryptogenic stroke, one patient suffered from decompression illness. Patients' and PFO characteristics and the indications for closure are shown in Table I.","reviewer_rationale":"Clinical information is clearly reported: indication mix (single/multiple TIA, single/multiple CVA, decompression illness), PFO characteristics (100% RLS with Valsalva, 44% spontaneous RLS, 50% atrial septal aneurysm), and history of SVT (17%), all tabulated in Table I. This gives a clear clinical picture of the enrolled cohort at baseline."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Yes","evidence_location":"p. 4, Results, Efficacy and Table III; p. 3, Results, Outcome and Short-Term Complications","exact_quote":"One day after closure, residual shunting was present in 56% of the patients. A small shunt was present in 27%, a moderate shunt in 23%, and a severe shunt in 6% of the patients. Follow-up echocardiography at 1 month after closure could be obtained in 33 patients (97%). ... At 1 month, residual shunting was seen in 45% of the patients, 30% was defined as a small shunt, 12% as a moderate shunt, and 3% as a severe shunt (P 5 0.02 compared with 1 day follow-up).","reviewer_rationale":"Outcomes are reported at both timepoints with explicit denominators and grading: procedural success (34/35, 97%), the single surgical retrieval, in-hospital and 1-month major/minor complications (including new SVT, inguinal haematoma, transient neurological event) in Table III, and residual shunt categories at day 1 and 1 month with a P value. Reasons for the two missing 1-month echocardiograms are given (97% follow-up completeness), satisfying clear outcome and follow-up reporting."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 1, Title page, author affiliation; p. 2, Methods, Study Population","exact_quote":"Department of Cardiology, St. Antonius Hospital, Nieuwegein, The Netherlands","reviewer_rationale":"The site is clearly identified: a single named centre (St. Antonius Hospital, Nieuwegein, The Netherlands), department (Cardiology), country, and the recruitment period (November 2007–July 2008). The centre is a hospital-based cardiology department performing the procedure under general/local anaesthesia; this provides adequate site and setting demographic information for a single-centre case series."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 2, Methods, Statistical Analysis; p. 4, Results, Efficacy","exact_quote":"Descriptive statistics were used to describe patients' characteristics. Continuous variables with normal distribution are presented as mean 6 standard deviation. Univariate statistical analysis was used to identify risk factors for residual shunting after PFO closure.","reviewer_rationale":"Statistical methods are appropriate for a small case series: descriptive statistics with means/SD for continuous data, percentages with clear denominators (35 and 33) for categorical outcomes, a paired comparison of day-1 vs 1-month shunt rates (P=0.02), and an exploratory univariate analysis of predictors of residual shunt (reported as finding none, likely underpowered—a limitation the authors acknowledge). Use of SPSS 14.0 is stated. No inappropriate inferential claims beyond the scope of the data were made."}],"overall":{"domain_rationale":"This is a methodologically transparent prospective single-centre case series of 35 consecutive patients undergoing PFO closure with a new bioabsorbable device. All ten JBI items are satisfied on the basis of explicit reporting: clear inclusion criteria (symptomatic PFO; defined recruitment window; no other devices implanted), standardized diagnosis and outcome measurement (cTTE/cTEE with Valsalva, quantitative bubble grading, independent double endpoint reading), explicit consecutive and complete inclusion, detailed demographics and clinical/PFO characteristics, clear outcome and follow-up reporting (97% follow-up with reasons for missing data), adequate site information, and appropriate descriptive statistics. The principal residual concern is inherent to the design (small n, short 1-month follow-up) rather than to reporting quality.","strengths":["Explicit consecutive inclusion with a defined recruitment window and statement that no other closure devices were implanted during the period (supports complete capture)","Standardized, well-described diagnostic and outcome methods: cTTE/cTEE with Valsalva, 10 mL agitated-saline protocol, quantitative bubble-count shunt grading, and two independent physicians performing endpoint analysis","Predefined complication classification (Khairy et al. scheme) with major/minor complications reported separately in-hospital and at 1 month","Detailed baseline demographics, vascular risk factors, PFO morphology (RLS grades, ASA), and indications reported in Table I","Near-complete follow-up (33/35, 97%) with explicit reasons for the two missing echocardiograms","Appropriate descriptive statistics with clear denominators and a formal comparison of day-1 vs 1-month shunt rates"],"limitations":["Small sample size (n=35) limiting precision and any subgroup analyses","Short follow-up (1 month) with no long-term safety/efficacy data","No formal screening log to independently verify complete capture of all potentially eligible patients","Univariate predictor analysis for residual shunt was underpowered (no predictors identified; authors note the small sample)","Residual shunt grading is operator-dependent despite standardization, and inter-observer variability is cited rather than re-demonstrated in this cohort"],"missing_information":["No formal screening log or numbers screened to independently corroborate complete consecutive capture","Operator/site experience details (number of operators, prior device volumes) not reported","Table III cell-level breakdown is partially inferable from narrative text because the extracted table layout is merged"],"unavailable_documents":["None; full text (extracted) was provided. The PDF binary could not be text-parsed directly, but the text-layer extraction was complete enough to verify all narrative, tables, and figures cited."],"reviewer_override":"none","override_justification":""}},"Van den Branden_2010":{"study_id":"Van den Branden_2010","reviewer":"JBI appraisal subagent (AI-assisted)","review_date":"2026-08-04","stage1":{"design_as_reported":"Assessment of the mid-term (6-month) safety and efficacy of percutaneous PFO closure using the bioabsorbable BioSTAR device (NMT Medical) in a consecutive, single-center series.","design_actual":"Single-arm, single-center case series (consecutive cohort) with a prespecified follow-up protocol (ECG, chest X-ray and cTTE within 24 h; cTTE with Valsalva at 1 and 6 months, planned to 1 and 2 years); no comparator arm.","n_participants":"62 (55% women; mean age 47.7 ± 11.8 years); follow-up cohort n = 60 at the 1-month and 6-month timepoints.","n_centers":"1 (St. Antonius Hospital, Nieuwegein, the Netherlands)","prospective_retrospective":"Prospective data collection is reasonably inferable (study protocol approved by the local ethics committee; prespecified follow-up schedule and outcome definitions), but the report does not explicitly label the design prospective or retrospective.","recruitment":"Consecutive - 'All consecutive patients who underwent percutaneous PFO closure with the bioabsorbable closure device between November 2007 and January 2009 were included' (defined recruitment window); no screening log reported.","report_type_judgment":"Case series (single-arm cohort), n = 62; appropriately appraised with the JBI Case Series checklist.","tool_eligibility_note":"No design concern - the report is a consecutive, single-center case series of a defined device procedure and is suitable for the JBI Case Series tool. This is the 6-month follow-up report of the center's BioSTAR experience; the earlier short-term report (reference 12, Catheter Cardiovasc Interv 2009;74:286-90) belongs to the same study family and was not used for this appraisal."},"items":[{"item":1,"question":"Were there clear criteria for inclusion in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Patient group; p. 1, Abstract (Methods)","exact_quote":"From November 2007 to January 2009, 62 consecutive patients (55% women, mean age 47.7 ± 11.8 years) underwent PFO closure with the BioSTAR device (NMT Medical). Most patients were referred by neurologists, mainly because of cryptogenic stroke or transient ischemic attack (TIA) (93.5%).","reviewer_rationale":"The population included is clearly defined by procedure (percutaneous PFO closure), device (BioSTAR), and a specified recruitment window (November 2007 to January 2009), with indications for closure (cryptogenic stroke/TIA, decompression illness, renal infarction) enumerated in the text and Table 1. Formal, enumerated exclusion criteria and a screening log are not reported, but the criteria for inclusion in this case series are sufficiently explicit and clear."},{"item":2,"question":"Was the condition measured in a standard, reliable way for all participants included in the case series?","response":"Yes","evidence_location":"p. 2, Methods, Pre-procedure evaluation; p. 3, Methods, Follow-up evaluation","exact_quote":"All patients were assessed by a standardized protocol before closure, including contrast transthoracic echocardiography (cTTE) with second harmonic imaging and/or contrast transesophageal echocardiography. Agitated saline contrast was injected into an antecubital vein to demonstrate right-to-left shunt, both at rest and following the Valsalva maneuver.","reviewer_rationale":"PFO/right-to-left shunt was measured with a standardized protocol (cTTE with second harmonic imaging and/or contrast TEE, agitated-saline contrast with a defined Valsalva technique) applied to all participants, and follow-up shunt grading was predefined by bubble count (small \u003c30, moderate 30-100, severe >100). 'All echocardiographic examinations were reviewed by 2 independent physicians,' and the authors cite excellent interobserver variability for their cTTE grading method (reference 21), supporting standard, reliable measurement for all participants."},{"item":3,"question":"Were valid methods used for identification of the condition for all participants?","response":"Yes","evidence_location":"p. 2, Methods, Pre-procedure evaluation","exact_quote":"All patients were assessed by a standardized protocol before closure, including contrast transthoracic echocardiography (cTTE) with second harmonic imaging and/or contrast transesophageal echocardiography. Agitated saline contrast was injected into an antecubital vein to demonstrate right-to-left shunt, both at rest and following the Valsalva maneuver.","reviewer_rationale":"Identification of PFO/right-to-left shunt used valid, established diagnostic methods - contrast transthoracic echocardiography (second harmonic) and/or contrast transesophageal echocardiography with agitated saline and Valsalva - applied to all participants before closure. These methods are appropriate for identifying the condition in every included participant."},{"item":4,"question":"Did the case series have consecutive inclusion of participants?","response":"Yes","evidence_location":"p. 1, Abstract, Methods; p. 2, Methods, Patient group; p. 5, Discussion","exact_quote":"All consecutive patients who underwent percutaneous PFO closure with the bioabsorbable closure device between November 2007 and January 2009 were included.","reviewer_rationale":"Consecutive enrollment is explicitly stated for a defined recruitment window (November 2007 to January 2009), and the authors describe the report as 'the largest series of consecutive patients treated with the BioSTAR device.' This directly satisfies the criterion of consecutive inclusion."},{"item":5,"question":"Did the case series have complete inclusion of participants?","response":"Yes","evidence_location":"p. 2, Methods, Patient group","exact_quote":"From November 2007 to January 2009, 62 consecutive patients (55% women, mean age 47.7 ± 11.8 years) underwent PFO closure with the BioSTAR device (NMT Medical).","reviewer_rationale":"The report states that all consecutive patients treated with the device in the defined window were included, with no exclusions described; the reduction of the follow-up denominator to n = 60 is explained by the 2 patients whose device was retrieved/replaced (receiving an Amplatzer device) rather than by exclusion from the series. A formal screening log is not provided, but the explicit statement that all consecutive patients in the defined source population were included supports a favorable response."},{"item":6,"question":"Was there clear reporting of the demographics of the participants?","response":"Yes","evidence_location":"p. 1, Abstract, Results; p. 3, Table 1","exact_quote":"Sixty-two patients (55% women, mean age 47.7 ± 11.8 years) underwent PFO closure.","reviewer_rationale":"Demographics are clearly reported in Table 1 (n = 62): mean age 47.7 ± 11.8 years, 34 women (54.8%), weight, systolic/diastolic blood pressure, and risk-factor profile (smoking, diabetes, arterial hypertension, hypercholesterolemia, family history, coronary artery disease). This is comprehensive demographic reporting for a case series of this size."},{"item":7,"question":"Was there clear reporting of clinical information of the participants?","response":"Yes","evidence_location":"p. 2, Methods, Patient group; p. 3, Table 1","exact_quote":"Most patients were referred by neurologists, mainly because of cryptogenic stroke or transient ischemic attack (TIA) (93.5%). One patient (1.6%) had suffered a renal infarction, and 3 patients (4.8%) had decompression illness.","reviewer_rationale":"Clinical information is clearly reported in Table 1: indications for closure (TIA single/multiple, CVA single/multiple, decompression illness, renal infarction; footnote: 6 patients had a history of both a TIA and a CVA) and PFO characteristics (RLS on Valsalva, RLS spontaneous 62 (100%), atrial septal aneurysm, baseline SVT history). Baseline symptomatic/event history and PFO morphology are described, satisfying clear reporting of clinical information."},{"item":8,"question":"Were the outcomes or follow-up results of cases clearly reported?","response":"Yes","evidence_location":"p. 4, Results, Mid-term outcome (Complications, Recurrent thromboembolic events, Residual shunt); p. 4, Table 3 and Figure 2","exact_quote":"During 6-month follow-up (n = 60), no major complications occurred (Table 3). Eight patients (12.9%) developed a new SVT, 7 of which during the first month.","reviewer_rationale":"Outcomes are clearly reported by timepoint: procedural success (95.2%), in-hospital and follow-up complications (Table 3), recurrent thromboembolic events (2 TIAs; recurrence rate of stroke/TIA 3.2%), new-onset SVT/atrial fibrillation, device-thrombus assessment, and residual shunt rates at 1 day, 1 month, and 6 months (complete closure 40%, 62.7%, and 76.3%; mild/moderate residual shunt 51.7%, 33.9%, and 23.7%; large shunt 8.3%, 3.4%, and 0%; Figure 2). Denominators (n = 62 at 1 day, n = 60 at 1 and 6 months) are specified."},{"item":9,"question":"Was there clear reporting of the presenting site(s)/clinic(s) demographic information?","response":"Yes","evidence_location":"p. 1, title page (author affiliation); p. 5, Discussion, Study limitations","exact_quote":"From the Department of Interventional Cardiology, St. Antonius Hospital, Nieuwegein, the Netherlands.","reviewer_rationale":"The presenting site is fully identified (Department of Interventional Cardiology, St. Antonius Hospital, Nieuwegein, the Netherlands); the study is acknowledged as 'a single-center study'; the recruitment period (November 2007 to January 2009) and referral setting ('Most patients were referred by neurologists') are reported, providing clear site/clinic demographic information."},{"item":10,"question":"Was statistical analysis appropriate?","response":"Yes","evidence_location":"p. 3, Methods, Statistical analysis","exact_quote":"Descriptive statistics were used to describe patients' characteristics. Continuous variables with normal distribution are presented as mean ± SD. Univariate statistical analysis was used to identify risk factors for residual shunting and the development of new SVT after PFO closure. Predictors of untoward events were analyzed by means of the Student t test and Fisher exact test for continuous and categorical variables, respectively. For within-group comparison of proportions, the McNemar test was used.","reviewer_rationale":"The statistical approach is appropriate for a case series: descriptive summaries with clearly specified denominators and timepoints, plus appropriately chosen univariate tests (Student t test, Fisher exact test, McNemar test). The authors explicitly note that no formal adjustment for multiple comparisons was used, a minor limitation, but this does not make the analysis inappropriate for the descriptive, hypothesis-generating purpose of a case series."}],"overall":{"domain_rationale":"This single-center, consecutive case series of 62 patients receiving the BioSTAR bioabsorbable PFO closure device with 6-month follow-up meets all ten JBI case-series criteria. It has clear inclusion criteria (consecutive patients treated with the device in a defined window), standardized and valid imaging for PFO diagnosis and shunt grading (cTTE with second harmonic imaging and/or contrast TEE, agitated-saline contrast, dual physician review), explicit consecutive and complete inclusion, comprehensive demographic and clinical baseline tables, clear outcome reporting by timepoint (procedural success, complications, recurrent events, residual shunt), complete site information, and appropriate descriptive/univariate statistics. Principal limitations are the small single-center sample, short follow-up, absence of explicitly enumerated eligibility/exclusion criteria and screening data, use of cTTE rather than contrast TEE for follow-up shunt assessment, and no adjustment for multiple comparisons - none of which invalidate the checklist responses.","strengths":["Explicitly consecutive enrollment with a defined recruitment window (November 2007 to January 2009).","Standardized, protocol-based PFO diagnosis and shunt grading (cTTE second-harmonic and/or contrast TEE; predefined bubble-count grades), with all echocardiograms reviewed by 2 independent physicians.","Comprehensive baseline demographic, clinical, and PFO-morphology reporting (Table 1).","Outcomes reported by timepoint (1 day, 1 month, 6 months) with specified denominators and explicit definitions (procedural success; major/minor complications per the Khairy classification).","Appropriate descriptive statistics and univariate analyses for a case series."],"limitations":["Single-center design with a small cohort (n = 62) and short (6-month) follow-up, acknowledged by the authors.","Formal inclusion/exclusion criteria and a screening log are not reported; criteria for selecting the BioSTAR device relative to other PFO closure devices are not described.","Follow-up denominator decreases from 62 to 60; the device-retrieval/replacement patients are accounted for, but no loss-to-follow-up handling is described.","Residual shunt at follow-up was assessed by cTTE rather than contrast TEE ('gold standard'), as the authors acknowledge.","Device-thrombus assessment by TTE only, acknowledged as potentially suboptimal.","No formal adjustment for multiple comparisons in the univariate predictor analyses; the study is not explicitly labeled prospective or retrospective."],"missing_information":["Explicitly enumerated eligibility and exclusion criteria and screening/source-population data.","Explicit statement of prospective versus retrospective data collection.","Details on the handling of the 2 patients removed from the follow-up denominator (device retrieval/replacement) and any other loss to follow-up.","Sample-size justification for the univariate predictor analyses (minor)."],"unavailable_documents":[],"reviewer_override":"none","override_justification":""}}}};
+
+var STORE_KEY = "simpleOfflineJbi_v1";
+var PROJECT_KEY = "simpleOfflineJbi_projects_v1";
+var historyStack = [];
+var historyPos = -1;
+var projects = {};
+
+var STATE = {
+  rows: [],
+  opts: { auto: true, comp: true, weighted: false },
+  ui: {
+    font: 1, fontFamily: "Helvetica", journal: "0", psize: 10,
+    barPct: true, legend: true, caption: true, domainLabels: "short",
+    sortBy: "original", query: "", tab: "tf",
+    title: "", subtitle: "", footnote: ""
+  }
+};
+
+/* ---------- small helpers ---------- */
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function safeName(s){ return String(s).replace(/[^\w\-]+/g,"_").replace(/^_+|_+$/g,"") || "figure"; }
+function displayName(id){ return String(id || "").replace(/_/g," "); }
+
+function wrapText(str, maxChars){
+  var out = [];
+  var lines = String(str).split("\n");
+  for (var i=0;i<lines.length;i++){
+    var words = lines[i].split(" ");
+    var cur = "";
+    for (var w=0;w<words.length;w++){
+      var next = cur ? cur + " " + words[w] : words[w];
+      if (next.length <= maxChars) cur = next;
+      else { if (cur) out.push(cur); cur = words[w]; }
+    }
+    if (cur) out.push(cur);
+  }
+  return out;
+}
+
+function fontFamilyCss(){
+  var f = STATE.ui.fontFamily || "Helvetica";
+  if (f === "Arial") return "Arial, Helvetica, sans-serif";
+  if (f === "Times") return "\"Times New Roman\", Times, serif";
+  if (f === "Georgia") return "Georgia, \"Times New Roman\", serif";
+  return "Helvetica, Arial, sans-serif";
+}
+
+/* ---------- judgement mapping ---------- */
+function codeOfJbi(raw, warns, where){
+  var v = String(raw == null ? "" : raw).trim().toLowerCase().replace(/\s+/g," ");
+  if (v === ""){
+    if (warns) warns.push("Blank item cell at " + where + " — treated as Unclear (absence of reporting is not evidence).");
+    return "u";
+  }
+  if (/^(yes|y)$/.test(v)) return "y";
+  if (/^(no|n)$/.test(v)) return "n";
+  if (/^(unclear|u|unreported|not reported|nr)$/.test(v)) return "u";
+  if (/^(not applicable|not app|n\/a|na|x|\-|—|\.)$/.test(v)) return "x";
+  if (warns) warns.push("Unrecognised response \"" + raw + "\" at " + where + " — shown as Unclear.");
+  return "u";
+}
+
+function responseLabel(code){ var r = RESP[code]; return r ? r.label : ""; }
+function colourOfResp(code){ var r = RESP[code]; return r ? r.colour : "#cccccc"; }
+function colourOfOverall(code){ var o = OVERALL[code]; return o ? o.colour : "#d3d3d3"; }
+
+/* ---------- row model ---------- */
+function blankItem(){ return {evidence_location:"", exact_quote:"", reviewer_rationale:""}; }
+
+function blankRow(){
+  var items = [];
+  var codes = [];
+  for (var i=0;i<ITEMS.length;i++){ items.push(blankItem()); codes.push(""); }
+  return {
+    study: "", n: "", design: "", weight: 1, notes: "",
+    codes: codes, items: items,
+    stage1: {design_as_reported:"", design_actual:"", n_participants:"", n_centers:"",
+             prospective_retrospective:"", recruitment:"", report_type_judgment:"", tool_eligibility_note:""},
+    overall: {domain_rationale:"", strengths:[], limitations:[], missing_information:[],
+              unavailable_documents:[], reviewer_override:"none", override_justification:""},
+    overallOverride: false, overallManual: ""
+  };
+}
+
+/* Completion % — share of the 10 items with an explicit response. */
+function completionOf(codes){
+  var done = 0;
+  for (var i=0;i<codes.length;i++) if (codes[i]) done++;
+  return Math.round(done / codes.length * 100);
+}
+
+/* Overall code from item responses: any No -> High concern; any Unclear
+   (or blank/unreported) -> Unclear; any Yes -> Low concern; else "". */
+function computeOverall(codes){
+  var anyN = false, anyU = false, anyY = false;
+  for (var i=0;i<codes.length;i++){
+    var c = codes[i] || "u";
+    if (c === "n") anyN = true;
+    else if (c === "u") anyU = true;
+    else if (c === "y") anyY = true;
+  }
+  if (anyN) return "h";
+  if (anyU) return "u";
+  if (anyY) return "l";
+  return "";
+}
+
+function rowOverall(row){
+  if (row.overallOverride && OVERALL[row.overallManual]) return row.overallManual;
+  return computeOverall(row.codes);
+}
+
+/* ---------- native results_combined.json <-> internal rows ---------- */
+function buildFromNative(studies){
+  var out = [];
+  var keys = Object.keys(studies || {});
+  for (var k=0;k<keys.length;k++){
+    var s = studies[keys[k]] || {};
+    var row = blankRow();
+    row.study = displayName(s.study_id || keys[k]);
+    var nText = String((s.stage1 || {}).n_participants || "");
+    var nMatch = nText.match(/(\d[\d,]*(?:\.\d+)?)/);
+    row.n = nMatch ? nMatch[1] : "";
+    row.design = String((s.stage1 || {}).design_actual || "");
+    row.stage1 = Object.assign({}, blankRow().stage1, s.stage1 || {});
+    row.overall = Object.assign({}, blankRow().overall, s.overall || {});
+    var items = Array.isArray(s.items) ? s.items : [];
+    for (var i=0;i<ITEMS.length;i++){
+      var it = items[i] || {};
+      row.codes[i] = codeOfJbi(it.response || "");
+      row.items[i] = {
+        evidence_location: String(it.evidence_location || ""),
+        exact_quote: String(it.exact_quote || ""),
+        reviewer_rationale: String(it.reviewer_rationale || "")
+      };
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+function rowToNative(row){
+  var items = [];
+  for (var i=0;i<ITEMS.length;i++){
+    items.push({
+      item: i + 1,
+      question: ITEMS[i].name,
+      response: responseLabel(row.codes[i]) || "",
+      evidence_location: row.items[i].evidence_location,
+      exact_quote: row.items[i].exact_quote,
+      reviewer_rationale: row.items[i].reviewer_rationale
+    });
+  }
+  return {
+    study_id: row.study.replace(/ /g, "_"),
+    reviewer: "JBI appraisal (offline tool)",
+    review_date: new Date().toISOString().slice(0, 10),
+    stage1: Object.assign({}, row.stage1),
+    items: items,
+    overall: Object.assign({}, row.overall)
+  };
+}
+
+function toNative(){
+  var studies = {};
+  var rows = STATE.rows;
+  for (var i=0;i<rows.length;i++){
+    var key = rows[i].study.replace(/ /g, "_") || ("study_" + (i + 1));
+    if (studies[key]) key = key + "_" + i;
+    studies[key] = rowToNative(rows[i]);
+  }
+  return { generated: new Date().toISOString().slice(0,10), tool: TOOL_NAME, studies: studies };
+}
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  var out = [], row = [], field = "", inQ = false;
+  var delim = detectDelim(text);
+  for (var i=0;i<text.length;i++){
+    var ch = text.charAt(i);
+    if (inQ){
+      if (ch === "\""){
+        if (text.charAt(i+1) === "\""){ field += "\""; i++; }
+        else inQ = false;
+      } else field += ch;
+    } else if (ch === "\""){
+      inQ = true;
+    } else if (ch === delim){
+      row.push(field); field = "";
+    } else if (ch === "\n" || ch === "\r"){
+      if (ch === "\r" && text.charAt(i+1) === "\n") i++;
+      row.push(field); field = "";
+      if (row.some(function(c){ return c.trim() !== ""; })) out.push(row);
+      row = [];
+    } else field += ch;
+  }
+  if (field !== "" || row.length > 0){ row.push(field); if (row.some(function(c){ return c.trim() !== ""; })) out.push(row); }
+  return out;
+}
+
+function detectDelim(text){
+  var first = text.split(/\r?\n/, 1)[0] || "";
+  var tabs = (first.match(/\t/g) || []).length;
+  var commas = (first.match(/,/g) || []).length;
+  var semis = (first.match(/;/g) || []).length;
+  if (tabs > commas && tabs > semis) return "\t";
+  if (semis > commas) return ";";
+  return ",";
+}
+
+function normalizeHeader(value){
+  return String(value == null ? "" : value).toLowerCase().replace(/[\uFEFF_-]+/g," ").replace(/\s+/g," ").trim();
+}
+
+/* Map a CSV header row to column roles. Returns object of
+   {study, design, n, weight, overall, notes, items:[index x10]} */
+function detectSpec(headers){
+  var spec = { items: [] };
+  for (var i=0;i<headers.length;i++){
+    var h = normalizeHeader(headers[i]);
+    if (h === "study" || h === "study id" || h === "study id" || h === "author" || h === "label"){
+      spec.study = i;
+    } else if (h === "design" || h === "design actual"){
+      spec.design = i;
+    } else if (h === "n" || h === "n participants" || h === "sample size" || h === "participants"){
+      spec.n = i;
+    } else if (h === "weight"){
+      spec.weight = i;
+    } else if (h === "overall" || h === "overall judgment" || h === "overall judgment (formula-derived)"){
+      spec.overall = i;
+    } else if (h === "notes" || h === "note"){
+      spec.notes = i;
+    } else {
+      var m = h.match(/^(?:q|item|question|domain|d)(\d{1,2})/);
+      if (m){
+        var idx = parseInt(m[1], 10) - 1;
+        if (idx >= 0 && idx < ITEMS.length) spec.items[idx] = i;
+      }
+    }
+  }
+  return spec;
+}
+
+function parseWeight(raw, warns, where){
+  var text = String(raw == null ? "" : raw).trim();
+  if (text === "") return 1;
+  var value = Number(text);
+  if (!isFinite(value) || value < 0){
+    if (warns) warns.push("Invalid weight \"" + raw + "\" at " + where + " — defaulted to 1.");
+    return 1;
+  }
+  return value;
+}
+
+/* Parse CSV text into {rows, warns, header, spec}. */
+function parseCsvData(text){
+  var warns = [];
+  var table = parseCSV(text);
+  if (!table.length) return { rows: [], warns: ["No data rows found."], header: [], spec: {} };
+  var header = table[0];
+  var spec = detectSpec(header);
+  var rows = [];
+  var seen = {};
+  for (var r=1;r<table.length;r++){
+    var cells = table[r];
+    var get = function(i){ return (i === undefined || i >= cells.length) ? "" : cells[i]; };
+    var study = String(get(spec.study)).trim();
+    if (!study){
+      warns.push("Row " + (r + 1) + ": missing Study name — row skipped.");
+      continue;
+    }
+    var where = "row " + (r + 1);
+    if (seen[study]) warns.push(where + ": duplicate study name \"" + study + "\".");
+    seen[study] = true;
+    var row = blankRow();
+    row.study = study;
+    row.design = String(get(spec.design)).trim();
+    row.n = String(get(spec.n)).trim().replace(/[^\d.,]/g,"");
+    row.weight = parseWeight(get(spec.weight), warns, where);
+    row.notes = String(get(spec.notes)).trim();
+    for (var i=0;i<ITEMS.length;i++){
+      if (spec.items[i] !== undefined){
+        row.codes[i] = codeOfJbi(get(spec.items[i]), warns, where + " " + ITEMS[i].code);
+      } else {
+        warns.push(where + ": no column for " + ITEMS[i].code + " — treated as Unclear.");
+        row.codes[i] = "u";
+      }
+    }
+    var ov = String(get(spec.overall)).trim();
+    if (ov && ov.toLowerCase() !== "auto"){
+      var oc = ov.toLowerCase();
+      if (/^(low concern|low|good|yes)$/.test(oc)){ row.overallOverride = true; row.overallManual = "l"; }
+      else if (/^(high concern|high|bad|no)$/.test(oc)){ row.overallOverride = true; row.overallManual = "h"; }
+      else if (/^(unclear|u)$/.test(oc)){ row.overallOverride = true; row.overallManual = "u"; }
+      else warns.push(where + ": unrecognised Overall value \"" + ov + "\" — ignored (auto).");
+    }
+    rows.push(row);
+  }
+  if (!rows.length) warns.push("No valid rows could be imported.");
+  return { rows: rows, warns: warns, header: header, spec: spec };
+}
+
+/* JSON import: accept either the combined {"studies": {...}} object,
+   an array of per-study objects, or a bare studies map. */
+function parseJsonData(obj){
+  var warns = [];
+  var studies = {};
+  var src = obj && obj.studies ? obj.studies : (Array.isArray(obj) ? obj : obj);
+  if (Array.isArray(src)){
+    for (var i=0;i<src.length;i++){
+      var s = src[i] || {};
+      studies[s.study_id || ("study_" + (i + 1))] = s;
+    }
+  }
+  var rows = buildFromNative(studies);
+  if (!rows.length) warns.push("No studies found in the JSON file.");
+  else warns.push("Imported " + rows.length + " stud" + (rows.length === 1 ? "y" : "ies") + " with full evidence (quotes, rationale, stage-1 design).");
+  return { rows: rows, warns: warns };
+}
+
+function csvOfRows(rows){
+  var lines = [];
+  var head = ["Study","Design","N","Weight"];
+  for (var i=0;i<ITEMS.length;i++) head.push(ITEMS[i].code);
+  head.push("Overall","Notes");
+  lines.push(head.join(","));
+  for (var r=0;r<rows.length;r++){
+    var row = rows[r];
+    var out = [row.study, row.design, row.n, row.weight];
+    for (var j=0;j<ITEMS.length;j++) out.push(responseLabel(row.codes[j]));
+    out.push(OVERALL[rowOverall(row)] ? OVERALL[rowOverall(row)].label : "");
+    out.push(row.notes);
+    lines.push(out.map(function(cell){
+      var s = String(cell == null ? "" : cell);
+      return /[",\n]/.test(s) ? "\"" + s.replace(/"/g,"\"\"") + "\"" : s;
+    }).join(","));
+  }
+  return lines.join("\n");
+}
+
+/* ---------- figure helpers ---------- */
+function rowLabel(row){
+  var n = String(row.n || "").trim();
+  return row.study + (n ? " (n=" + n + ")" : "");
+}
+
+function displayRows(){
+  var rows = STATE.rows.slice();
+  var q = STATE.ui.query ? STATE.ui.query.trim().toLowerCase() : "";
+  if (q) rows = rows.filter(function(r){ return String(r.study).toLowerCase().indexOf(q) !== -1; });
+  if (STATE.ui.sortBy === "name"){
+    rows.sort(function(a,b){ return String(a.study).localeCompare(String(b.study)); });
+  }
+  return rows;
+}
+
+function rowsHaveWeights(rs){
+  for (var i=0;i<rs.length;i++) if (Number(rs[i].weight) !== 1) return true;
+  return false;
+}
+
+/* Present codes: {item:{code:bool}, overall:{code:bool}} */
+function presentCodes(rs){
+  var item = {}, ov = {};
+  for (var i=0;i<rs.length;i++){
+    for (var j=0;j<rs[i].codes.length;j++){
+      var c = rs[i].codes[j];
+      if (RESP[c]) item[c] = true;
+    }
+    var oc = rowOverall(rs[i]);
+    if (OVERALL[oc]) ov[oc] = true;
+  }
+  return { item: item, overall: ov };
+}
+
+function svgDefs(zUsed){
+  if (!zUsed) return "";
+  return "<defs><pattern id=\"hatch\" patternUnits=\"userSpaceOnUse\" width=\"6\" height=\"6\" patternTransform=\"rotate(45)\"><rect width=\"6\" height=\"6\" fill=\"#e6e6e6\"/><line x1=\"0\" y1=\"0\" x2=\"0\" y2=\"6\" stroke=\"#b0b0b0\" stroke-width=\"1.4\"/></pattern></defs>";
+}
+
+/* ---------------- Traffic light plot ---------------- */
+function trafficSVG(rs){
+  var nItem = ITEMS.length;
+  var showOverall = STATE.opts.auto !== false;
+  var showComp = STATE.opts.comp;
+  var nCols = nItem + (showOverall ? 1 : 0) + (showComp ? 1 : 0);
+  var fs = Number(STATE.ui.font) || 1;
+  var psize = Number(STATE.ui.psize) || 10;
+  var fullLabels = STATE.ui.domainLabels === "full";
+
+  var colW = 74 * (0.9 + fs * 0.1), rowH = 36, rowGap = 6, padL = 24;
+  var fsLabel = 12.5 * fs, fsAxis = 12 * fs, fsLegend = 11 * fs, fsCap = 11 * fs;
+
+  var maxLabel = 0;
+  for (var i=0;i<rs.length;i++) maxLabel = Math.max(maxLabel, rowLabel(rs[i]).length);
+  var labelW = Math.min(420, Math.max(70, maxLabel * 6.1 + 16));
+  var marginL = padL + labelW + 70;
+
+  var titleH = 0;
+  if (STATE.ui.title) titleH += 18;
+  if (STATE.ui.subtitle) titleH += 16;
+  var marginT = 74 + titleH + (fullLabels ? 44 : 0);
+  var plotH = rs.length * (rowH + rowGap) - rowGap;
+  var W = marginL + nCols * colW + 30;
+
+  var present = presentCodes(rs);
+  var legend = buildLegend(present);
+  var legendH = STATE.ui.legend ? 28 + legend.length * 20 + 14 : 0;
+  var legendW = 200;
+  var legendLeft = W - 24 - legendW + 4;
+  var capWrapW = Math.max(120, legendLeft - marginL - 20);
+  var capLines = STATE.ui.caption ? wrapText(figureCaption(rs), Math.max(20, Math.floor(capWrapW / 5.8))) : [];
+  var capH = capLines.length * 15 * fs + 6;
+  var footLines = STATE.ui.footnote ? wrapText(STATE.ui.footnote, Math.max(20, Math.floor(capWrapW / 5.8))) : [];
+  var footH = footLines.length * 14 * fs;
+  var bottomH = Math.max(legendH, capH + footH + 20) + 18;
+  var H = marginT + plotH + bottomH;
+
+  var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + W + "\" height=\"" + H + "\" font-family=\"" + fontFamilyCss() + "\">";
+  svg += svgDefs(false);
+  svg += "<rect x=\"0\" y=\"0\" width=\"" + W + "\" height=\"" + H + "\" fill=\"#ffffff\"/>";
+
+  if (STATE.ui.title){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"22\" text-anchor=\"middle\" font-size=\"" + (15 * fs) + "\" font-weight=\"bold\" fill=\"#000\">" + esc(STATE.ui.title) + "</text>";
+  }
+  if (STATE.ui.subtitle){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"" + (22 + (STATE.ui.title ? 18 : 0)) + "\" text-anchor=\"middle\" font-size=\"" + (11.5 * fs) + "\" fill=\"#444\">" + esc(STATE.ui.subtitle) + "</text>";
+  }
+
+  var plotX0 = marginL, plotY0 = marginT;
+
+  for (var c=0;c<nCols;c++){
+    var x = plotX0 + c * colW;
+    var isOv = showOverall && c === nItem;
+    var isComp = showComp && c === nCols - 1;
+    var fill = isOv ? "#eaeaea" : (isComp ? "#f6f6f6" : "#ffffff");
+    svg += "<rect x=\"" + x + "\" y=\"" + plotY0 + "\" width=\"" + colW + "\" height=\"" + plotH + "\" fill=\"" + fill + "\" stroke=\"#c0c0c0\" stroke-width=\"0.6\"/>";
+  }
+  for (var r=0;r<rs.length;r++){
+    var y = plotY0 + r * (rowH + rowGap);
+    svg += "<line x1=\"" + plotX0 + "\" y1=\"" + y + "\" x2=\"" + (plotX0 + nCols * colW) + "\" y2=\"" + y + "\" stroke=\"#c0c0c0\" stroke-width=\"0.6\"/>";
+    svg += "<text x=\"" + (plotX0 - 12) + "\" y=\"" + (y + rowH / 2 + 4) + "\" text-anchor=\"end\" font-size=\"" + fsLabel + "\" fill=\"#000\">" + esc(rowLabel(rs[r])) + "</text>";
+  }
+  var axisX = Math.max(16, plotX0 - labelW - 24);
+  var axisY = plotY0 + plotH / 2;
+  svg += "<text x=\"" + axisX + "\" y=\"" + axisY + "\" text-anchor=\"middle\" font-size=\"" + (12 * fs) + "\" fill=\"#000\" transform=\"rotate(-90 " + axisX + "," + axisY + ")\">" + esc("Study") + "</text>";
+
+  svg += "<text x=\"" + (plotX0 + nCols * colW / 2) + "\" y=\"" + (28 + titleH) + "\" text-anchor=\"middle\" font-size=\"" + (13 * fs) + "\" font-weight=\"bold\" fill=\"#000\">JBI critical appraisal domains</text>";
+
+  /* column headers */
+  for (var c2=0;c2<nCols;c2++){
+    var x2 = plotX0 + c2 * colW;
+    if (showOverall && c2 === nItem){
+      svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + 52 + "\" text-anchor=\"middle\" font-size=\"" + fsAxis + "\" font-weight=\"bold\" fill=\"#000\">Overall</text>";
+    } else if (showComp && c2 === nCols - 1){
+      svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + 52 + "\" text-anchor=\"middle\" font-size=\"" + fsAxis + "\" fill=\"#000\">Comp.</text>";
+    } else if (fullLabels){
+      var nameLines = wrapText(ITEMS[c2].name, 13).slice(0, 4);
+      for (var nl=0;nl<nameLines.length;nl++){
+        svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + (58 + nl * 11) + "\" text-anchor=\"middle\" font-size=\"" + (7.6 * fs) + "\" fill=\"#000\">" + esc(nameLines[nl]) + "</text>";
+      }
+    } else {
+      svg += "<text x=\"" + (x2 + colW / 2) + "\" y=\"" + 52 + "\" text-anchor=\"middle\" font-size=\"" + fsAxis + "\" fill=\"#000\">" + esc(ITEMS[c2].code) + "</text>";
+    }
+  }
+
+  /* cells */
+  for (var r2=0;r2<rs.length;r2++){
+    var row = rs[r2];
+    var rowIdx = STATE.rows.indexOf(row);
+    for (var c3=0;c3<nCols;c3++){
+      var cx = plotX0 + c3 * colW + colW / 2;
+      var cy = plotY0 + r2 * (rowH + rowGap) + rowH / 2;
+      var rad = Math.min(20, Math.max(8, psize * 1.3));
+      if (showOverall && c3 === nItem){
+        var oc = rowOverall(row);
+        svg += overallCell(oc, cx, cy, rad, rowIdx);
+        if (row.overallOverride){
+          svg += "<text x=\"" + (cx + rad + 7) + "\" y=\"" + (cy + 4) + "\" font-size=\"" + (9 * fs) + "\" fill=\"#555\">*</text>";
+        }
+      } else if (showComp && c3 === nCols - 1){
+        svg += "<text x=\"" + cx + "\" y=\"" + (cy + 4) + "\" text-anchor=\"middle\" font-size=\"" + (11 * fs) + "\" fill=\"#000\">" + completionOf(row.codes) + "%</text>";
+      } else {
+        var code = row.codes[c3] || "u";
+        var resp = RESP[code] || RESP.u;
+        var tip = esc(rowLabel(row) + " " + ITEMS[c3].code + ": " + resp.label + (row.items[c3].evidence_location ? " — " + row.items[c3].evidence_location : ""));
+        svg += "<circle cx=\"" + cx + "\" cy=\"" + cy + "\" r=\"" + rad + "\" fill=\"" + resp.colour + "\" stroke=\"#000\" stroke-width=\"1\" data-evidence=\"" + rowIdx + ":" + c3 + "\" data-study=\"" + rowIdx + "\"><title>" + tip + "</title></circle>";
+        if (resp.glyph){
+          var gfill = code === "u" ? "#000" : "#fff";
+          svg += "<text x=\"" + cx + "\" y=\"" + (cy + 5.5) + "\" text-anchor=\"middle\" font-size=\"" + (rad * 1.25 * fs) + "\" font-weight=\"bold\" fill=\"" + gfill + "\">" + resp.glyph + "</text>";
+        }
+      }
+    }
+  }
+
+  /* legend */
+  if (STATE.ui.legend){
+    var legendX = W - 24;
+    var legendY0 = plotY0 + plotH + 24;
+    var entries = legend;
+    var boxH = entries.length * 20 + 30;
+    svg += "<rect x=\"" + (legendX - legendW + 4) + "\" y=\"" + legendY0 + "\" width=\"" + (legendW - 4) + "\" height=\"" + boxH + "\" fill=\"#ffffff\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+    svg += "<text x=\"" + (legendX - legendW + 14) + "\" y=\"" + (legendY0 + 16) + "\" font-size=\"" + (12 * fs) + "\" font-weight=\"bold\" fill=\"#000\">Judgement</text>";
+    for (var e=0;e<entries.length;e++){
+      var ly = legendY0 + 32 + e * 20;
+      var ent = entries[e];
+      if (ent.shape === "square"){
+        svg += "<rect x=\"" + (legendX - legendW + 19) + "\" y=\"" + (ly - 11) + "\" width=\"16\" height=\"16\" fill=\"" + ent.colour + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+      } else {
+        svg += "<circle cx=\"" + (legendX - legendW + 27) + "\" cy=\"" + (ly - 3) + "\" r=\"8\" fill=\"" + ent.colour + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+      }
+      if (ent.glyph){
+        svg += "<text x=\"" + (legendX - legendW + 27) + "\" y=\"" + (ly - 0.5) + "\" text-anchor=\"middle\" font-size=\"" + (9.5 * fs) + "\" font-weight=\"bold\" fill=\"" + (ent.colour === "#E2DF07" ? "#000" : "#fff") + "\">" + ent.glyph + "</text>";
+      }
+      svg += "<text x=\"" + (legendX - legendW + 44) + "\" y=\"" + ly + "\" font-size=\"" + fsLegend + "\" fill=\"#000\">" + esc(ent.label) + "</text>";
+    }
+  }
+
+  var capX = plotX0;
+  var capY = plotY0 + plotH + 20;
+  for (var l=0;l<capLines.length;l++){
+    svg += "<text x=\"" + capX + "\" y=\"" + capY + "\" font-size=\"" + fsCap + "\" fill=\"#000\">" + esc(capLines[l]) + "</text>";
+    capY += 15 * fs;
+  }
+  for (var f=0;f<footLines.length;f++){
+    svg += "<text x=\"" + capX + "\" y=\"" + (capY + 8) + "\" font-size=\"" + (10.5 * fs) + "\" fill=\"#555\">" + esc(footLines[f]) + "</text>";
+    capY += 14 * fs;
+  }
+
+  svg += "</svg>";
+  return svg;
+}
+
+function overallCell(code, cx, cy, size, rowIdx){
+  var o = OVERALL[code] || {label:"Not assessed", glyph:"—", colour:"#d3d3d3"};
+  var half = size * 0.82;
+  var gfill = o.colour === "#E2DF07" ? "#000" : "#fff";
+  var s = "<rect x=\"" + (cx - half) + "\" y=\"" + (cy - half) + "\" width=\"" + (half * 2) + "\" height=\"" + (half * 2) + "\" rx=\"3\" fill=\"" + o.colour + "\" stroke=\"#000\" stroke-width=\"1\" data-study-detail=\"" + rowIdx + "\">";
+  s += "<title>" + esc(o.label) + "</title></rect>";
+  s += "<text x=\"" + cx + "\" y=\"" + (cy + 5.5) + "\" text-anchor=\"middle\" font-size=\"" + (half * 1.35) + "\" font-weight=\"bold\" fill=\"" + gfill + "\">" + o.glyph + "</text>";
+  return s;
+}
+
+/* build legend entries: item responses first, then overall codes */
+function buildLegend(present){
+  var out = [];
+  var seen = {};
+  for (var i=0;i<RESP_ORDER.length;i++){
+    var c = RESP_ORDER[i];
+    if (present.item[c] && !seen[c]){
+      seen[c] = true;
+      var r = RESP[c];
+      out.push({code:c, label:r.short, colour:r.colour, glyph:r.glyph, shape:"circle"});
+    }
+  }
+  for (var j=0;j<OVERALL_ORDER.length;j++){
+    var oc = OVERALL_ORDER[j];
+    if (present.overall[oc] && !seen["ov:" + oc]){
+      seen["ov:" + oc] = true;
+      var o = OVERALL[oc];
+      out.push({code:oc, label:o.short + " (overall)", colour:o.colour, glyph:o.glyph, shape:"square"});
+    }
+  }
+  return out;
+}
+
+/* ---------------- Bar plot ---------------- */
+function barSVG(rs){
+  var showOverall = STATE.opts.auto !== false;
+  var weighted = STATE.opts.weighted && rowsHaveWeights(rs);
+  if (weighted && !rs.some(function(r){ return isFinite(Number(r.weight)) && Number(r.weight) > 0; })) weighted = false;
+  var fs = Number(STATE.ui.font) || 1;
+
+  var names = ITEMS.map(function(it){ return it.name; });
+  if (showOverall) names.push("Overall judgment");
+
+  var fsName = 11.5 * fs;
+  var maxName = 0;
+  for (var i=0;i<names.length;i++) maxName = Math.max(maxName, names[i].length);
+  var marginL = Math.max(250, maxName * 6.1 + 30);
+  var plotW = 600;
+  var marginR = 74;
+  var barH = 26, barGap = 15;
+
+  var present = presentCodes(rs);
+  var legendEntries = buildLegend(present);
+  var footnote = STATE.ui.footnote ? STATE.ui.footnote : OVERALL_RULE;
+  var showLegend = STATE.ui.legend;
+  var legendH = (showLegend ? 36 + (legendEntries.length > 3 ? Math.ceil(legendEntries.length / 4) : 1) * 20 : 0) + (footnote ? 24 : 0);
+
+  var titleH = 0;
+  if (STATE.ui.title) titleH += 18;
+  if (STATE.ui.subtitle) titleH += 16;
+  var marginT = 40 + titleH;
+  var W = marginL + plotW + marginR;
+  var H = marginT + names.length * (barH + barGap) + legendH + 12;
+
+  var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + W + "\" height=\"" + H + "\" font-family=\"" + fontFamilyCss() + "\">";
+  svg += svgDefs(false);
+  svg += "<rect x=\"0\" y=\"0\" width=\"" + W + "\" height=\"" + H + "\" fill=\"#ffffff\"/>";
+
+  if (STATE.ui.title){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"22\" text-anchor=\"middle\" font-size=\"" + (15 * fs) + "\" font-weight=\"bold\" fill=\"#000\">" + esc(STATE.ui.title) + "</text>";
+  }
+  if (STATE.ui.subtitle){
+    svg += "<text x=\"" + (W / 2) + "\" y=\"" + (22 + (STATE.ui.title ? 18 : 0)) + "\" text-anchor=\"middle\" font-size=\"" + (11.5 * fs) + "\" fill=\"#444\">" + esc(STATE.ui.subtitle) + "</text>";
+  }
+
+  var plotX0 = marginL, plotY0 = marginT;
+  var plotH = names.length * (barH + barGap);
+
+  for (var b=0;b<names.length;b++){
+    var y = plotY0 + (names.length - 1 - b) * (barH + barGap);
+    var isOverall = showOverall && b === names.length - 1;
+    var codes = isOverall ? rs.map(function(r){ return rowOverall(r) || "x"; }) : rs.map(function(r){ return r.codes[b] || "u"; });
+    var stackOrder = isOverall ? OVERALL_ORDER : ["x","n","u","y"];
+    var sums = {};
+    var total = 0;
+    for (var s=0;s<stackOrder.length;s++) sums[stackOrder[s]] = 0;
+    for (var r=0;r<rs.length;r++){
+      var code = codes[r];
+      if (!(code in sums)) sums[code] = 0;
+      var w = weighted ? Math.max(0, Number(rs[r].weight) || 0) : 1;
+      sums[code] += w;
+      total += w;
+    }
+    var xPos = plotX0;
+    for (var s2=0;s2<stackOrder.length;s2++){
+      var code = stackOrder[s2];
+      var segW = total > 0 ? sums[code] / total * plotW : 0;
+      if (segW > 0.5){
+        var colour = isOverall ? colourOfOverall(code) : colourOfResp(code);
+        svg += "<rect x=\"" + xPos + "\" y=\"" + y + "\" width=\"" + segW + "\" height=\"" + barH + "\" fill=\"" + colour + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+        if (STATE.ui.barPct && segW > 30){
+          var pct = Math.round(sums[code] / total * 100);
+          svg += "<text x=\"" + (xPos + segW / 2) + "\" y=\"" + (y + barH / 2 + 4) + "\" text-anchor=\"middle\" font-size=\"" + (10 * fs) + "\" fill=\"" + (colour === "#E2DF07" ? "#000" : "#fff") + "\">" + pct + "%</text>";
+        }
+        xPos += segW;
+      }
+    }
+    var bold = isOverall ? " font-weight=\"bold\"" : "";
+    svg += "<text x=\"" + (plotX0 - 12) + "\" y=\"" + (y + barH / 2 + 4) + "\" text-anchor=\"end\" font-size=\"" + fsName + "\" fill=\"#000\"" + bold + ">" + esc(names[b]) + "</text>";
+  }
+
+  svg += "<text x=\"" + (plotX0 + plotW / 2) + "\" y=\"" + (26 + titleH) + "\" text-anchor=\"middle\" font-size=\"" + (13 * fs) + "\" font-weight=\"bold\" fill=\"#000\">" + (weighted ? "Weighted " : "") + "JBI appraisal — distribution of responses</text>";
+  for (var g=0;g<=4;g++){
+    var gx = plotX0 + g * plotW / 4;
+    svg += "<line x1=\"" + gx + "\" y1=\"" + plotY0 + "\" x2=\"" + gx + "\" y2=\"" + (plotY0 + plotH) + "\" stroke=\"#e0e0e0\" stroke-width=\"0.7\"/>";
+    svg += "<text x=\"" + gx + "\" y=\"" + (plotY0 + plotH + 16) + "\" text-anchor=\"middle\" font-size=\"" + (10.5 * fs) + "\" fill=\"#000\">" + (g * 25) + "%</text>";
+  }
+
+  var ly0 = plotY0 + plotH + 34;
+  var legendRows = showLegend ? (legendEntries.length > 3 ? Math.ceil(legendEntries.length / 4) : 1) : 0;
+  if (showLegend){
+    var cols = 4, cw = plotW / cols;
+    svg += "<text x=\"" + plotX0 + "\" y=\"" + (ly0 - 4) + "\" font-size=\"" + (12 * fs) + "\" font-weight=\"bold\" fill=\"#000\">Judgement</text>";
+    for (var e=0;e<legendEntries.length;e++){
+      var ent = legendEntries[e];
+      var col = e % cols, rowIx = Math.floor(e / cols);
+      var lx = plotX0 + col * cw;
+      var ly = ly0 + 14 + rowIx * 20;
+      svg += "<rect x=\"" + lx + "\" y=\"" + (ly - 12) + "\" width=\"14\" height=\"14\" fill=\"" + ent.colour + "\" stroke=\"#000\" stroke-width=\"0.8\"/>";
+      svg += "<text x=\"" + (lx + 20) + "\" y=\"" + ly + "\" font-size=\"" + (11 * fs) + "\" fill=\"#000\">" + esc(ent.label) + "</text>";
+    }
+  }
+  if (footnote) svg += "<text x=\"" + plotX0 + "\" y=\"" + (ly0 + 14 + legendRows * 20 + 6) + "\" font-size=\"" + (10 * fs) + "\" fill=\"#000\">* " + esc(footnote) + "</text>";
+
+  svg += "</svg>";
+  return svg;
+}
+
+/* ---------------- caption ---------------- */
+function figureCaption(rs){
+  var parts = [];
+  parts.push("JBI Critical Appraisal Checklist for Case Series — appraisal of " + rs.length + " included single-arm stud" + (rs.length === 1 ? "y" : "ies") + ".");
+  for (var i=0;i<ITEMS.length;i++) parts.push(ITEMS[i].code + ": " + ITEMS[i].name);
+  parts.push("Overall: " + OVERALL_RULE);
+  return parts.join("\n");
+}
+
+/* ================================================================ *
+ *  DOM WIRING AND INTERACTIONS  (not exercised by node tests)      *
+ * ================================================================ */
+
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, kind){
+  var host = $("toasts");
+  var d = document.createElement("div");
+  d.className = "toast " + (kind || "ok");
+  d.textContent = msg;
+  host.appendChild(d);
+  requestAnimationFrame(function(){ d.classList.add("show"); });
+  setTimeout(function(){ d.classList.remove("show"); setTimeout(function(){ d.remove(); }, 250); }, 4200);
+}
+
+function downloadFile(name, blob){
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 400);
+}
+
+function copyText(text){
+  var done = function(){ toast("Copied to clipboard.", "ok"); };
+  var fail = function(){ toast("Clipboard unavailable in this browser.", "err"); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, fail);
+  } else {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand("copy"); done(); }catch(e){ fail(); }
+    ta.remove();
+  }
+}
+
+/* ---------- persistence ---------- */
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }catch(e){}
+}
+
+function normalizeStoredRows(input){
+  if (!Array.isArray(input)) return [];
+  return input.map(function(source){
+    var row = source || {};
+    var codes = Array.isArray(row.codes) ? row.codes.slice(0, ITEMS.length) : [];
+    while (codes.length < ITEMS.length) codes.push("");
+    codes = codes.map(function(c){ return RESP[c] ? c : ""; });
+    var items = Array.isArray(row.items) ? row.items : [];
+    var safeItems = [];
+    for (var i=0;i<ITEMS.length;i++){
+      var it = items[i] || {};
+      safeItems.push({
+        evidence_location: String(it.evidence_location || ""),
+        exact_quote: String(it.exact_quote || ""),
+        reviewer_rationale: String(it.reviewer_rationale || "")
+      });
+    }
+    return {
+      study: String(row.study || ""),
+      n: String(row.n || ""),
+      design: String(row.design || ""),
+      weight: isFinite(Number(row.weight)) && Number(row.weight) >= 0 ? Number(row.weight) : 1,
+      notes: String(row.notes || ""),
+      codes: codes, items: safeItems,
+      stage1: Object.assign({}, blankRow().stage1, row.stage1 || {}),
+      overall: Object.assign({}, blankRow().overall, row.overall || {}),
+      overallOverride: row.overallOverride === true,
+      overallManual: OVERALL[row.overallManual] ? row.overallManual : ""
+    };
+  });
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return false;
+    var s = JSON.parse(raw);
+    if (s && Array.isArray(s.rows)){
+      STATE.rows = normalizeStoredRows(s.rows);
+      if (s.opts) Object.assign(STATE.opts, s.opts);
+      if (s.ui) Object.assign(STATE.ui, s.ui);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+function loadProjects(){
+  try{ projects = JSON.parse(localStorage.getItem(PROJECT_KEY)) || {}; }catch(e){ projects = {}; }
+}
+function saveProjects(){
+  try{ localStorage.setItem(PROJECT_KEY, JSON.stringify(projects)); }catch(e){}
+}
+
+/* ---------- history ---------- */
+function pushHistory(){
+  historyStack = historyStack.slice(0, historyPos + 1);
+  historyStack.push(JSON.stringify(STATE.rows));
+  if (historyStack.length > 60) historyStack.shift();
+  historyPos = historyStack.length - 1;
+}
+function undo(){
+  if (historyPos <= 0) { toast("Nothing to undo.", "warn"); return; }
+  historyPos--;
+  STATE.rows = normalizeStoredRows(JSON.parse(historyStack[historyPos]));
+  renderAll();
+  save();
+}
+function redo(){
+  if (historyPos >= historyStack.length - 1) { toast("Nothing to redo.", "warn"); return; }
+  historyPos++;
+  STATE.rows = normalizeStoredRows(JSON.parse(historyStack[historyPos]));
+  renderAll();
+  save();
+}
+
+/* ---------- view switching ---------- */
+function setPane(name){
+  var navs = document.querySelectorAll(".pane-nav button");
+  for (var i=0;i<navs.length;i++) navs[i].classList.toggle("active", navs[i].getAttribute("data-pane") === name);
+  var panes = document.querySelectorAll("aside .pane");
+  for (var j=0;j<panes.length;j++) panes[j].style.display = panes[j].id === "pane-" + name ? "" : "none";
+}
+
+function setTab(name){
+  STATE.ui.tab = name;
+  var tabs = document.querySelectorAll(".tabs button");
+  for (var i=0;i<tabs.length;i++) tabs[i].classList.toggle("active", tabs[i].getAttribute("data-tab") === name);
+  var tabs2 = document.querySelectorAll("main .tab");
+  for (var j=0;j<tabs2.length;j++) tabs2[j].classList.toggle("active", tabs2[j].id === "tab-" + name);
+}
+
+/* ---------- render ---------- */
+function renderTraffic(){
+  var host = $("figTf");
+  var rs = displayRows();
+  if (!rs.length){
+    host.innerHTML = "<div class=\"placeholder empty-guide\"><h3>No studies loaded</h3><p>Load the bundled 7-study appraisal, paste a CSV, or drop a JSON file.</p><button class=\"btn primary\" data-example=\"1\">Reload 7-study data</button> <button class=\"btn\" data-focus-import=\"1\">Import CSV</button></div>";
+    return;
+  }
+  host.innerHTML = trafficSVG(rs);
+}
+
+function renderBar(){
+  var host = $("figBar");
+  var rs = displayRows();
+  if (!rs.length){
+    host.innerHTML = "<div class=\"placeholder empty-guide\"><h3>Bar plot</h3><p>Import data to compare the distribution of responses across the 10 JBI items.</p><button class=\"btn primary\" data-example=\"1\">Reload 7-study data</button></div>";
+    return;
+  }
+  host.innerHTML = barSVG(rs);
+}
+
+var selectedRows = {};
+
+function renderTable(){
+  var host = $("grid");
+  var rs = displayRows();
+  var opts = STATE.opts;
+  var showOverall = opts.auto !== false;
+  var showComp = opts.comp;
+
+  var html = "<thead><tr><th class=\"sticky\"><input type=\"checkbox\" id=\"selAll\" title=\"Select all\"></th>" +
+    "<th class=\"sticky\">Study</th><th>N</th>";
+  for (var i=0;i<ITEMS.length;i++) html += "<th>" + esc(ITEMS[i].code) + "</th>";
+  if (showOverall) html += "<th>Overall</th>";
+  if (showComp) html += "<th>Comp.</th>";
+  html += "<th>Weight</th><th>Notes</th><th>Actions</th></tr></thead><tbody>";
+
+  for (var r=0;r<rs.length;r++){
+    var row = rs[r];
+    var idx = STATE.rows.indexOf(row);
+    var ov = rowOverall(row);
+    var ovInfo = OVERALL[ov] || {label:"", colour:"#d3d3d3"};
+    html += "<tr data-idx=\"" + idx + "\">" +
+      "<td class=\"sticky\"><input type=\"checkbox\" class=\"sel\" data-idx=\"" + idx + "\"" + (selectedRows[idx] ? " checked" : "") + "></td>" +
+      "<td class=\"sticky\"><input type=\"text\" class=\"f-study\" value=\"" + esc(row.study) + "\"></td>" +
+      "<td><input type=\"text\" class=\"f-n\" value=\"" + esc(row.n) + "\" style=\"width:64px\"></td>";
+    for (var j=0;j<ITEMS.length;j++){
+      html += "<td><select class=\"f-item\" data-item=\"" + j + "\">" + itemOptions(row.codes[j]) + "</select></td>";
+    }
+    if (showOverall){
+      html += "<td class=\"ov\"><span class=\"ov-pill\" style=\"background:" + ovInfo.colour + "\">" + esc(ovInfo.label || "—") + "</span></td>";
+    }
+    if (showComp) html += "<td>" + completionOf(row.codes) + "%</td>";
+    html += "<td><input type=\"number\" class=\"f-weight\" value=\"" + esc(row.weight) + "\" min=\"0\" step=\"1\"></td>" +
+      "<td><input type=\"text\" class=\"f-notes\" value=\"" + esc(row.notes) + "\" style=\"width:180px\"></td>" +
+      "<td><button class=\"act\" data-view=\"" + idx + "\">evidence</button> <button class=\"act\" data-dupe=\"" + idx + "\">copy</button> <button class=\"del\" data-del=\"" + idx + "\" title=\"Delete row\">✕</button></td>" +
+      "</tr>";
+  }
+  html += "</tbody>";
+  host.innerHTML = html;
+  renderBulkbar();
+}
+
+function itemOptions(selected){
+  var html = "<option value=\"\">—</option>";
+  var order = ["y","n","u","x"];
+  for (var i=0;i<order.length;i++){
+    var c = order[i];
+    var r = RESP[c];
+    html += "<option value=\"" + c + "\"" + (selected === c ? " selected" : "") + ">" + esc(r.label) + "</option>";
+  }
+  return html;
+}
+
+function renderBulkbar(){
+  var count = 0;
+  for (var k in selectedRows) if (selectedRows[k]) count++;
+  $("bulkCount").textContent = count + " selected";
+  $("bulkbar").classList.toggle("visible", count > 0);
+}
+
+function renderStatus(){
+  var rs = STATE.rows;
+  var answered = 0, unclear = 0, high = 0;
+  for (var i=0;i<rs.length;i++){
+    for (var j=0;j<rs[i].codes.length;j++) if (rs[i].codes[j]) answered++;
+    var ov = rowOverall(rs[i]);
+    if (ov === "u") unclear++;
+    if (ov === "h") high++;
+  }
+  var parts = [rs.length + " stud" + (rs.length === 1 ? "y" : "ies") + " · " + answered + "/" + (rs.length * ITEMS.length) + " item judgements"];
+  if (unclear) parts.push(unclear + " Unclear overall");
+  if (high) parts.push(high + " High concern overall");
+  $("summary").textContent = parts.join(" · ");
+  $("storeBadge").textContent = "offline · local · auto-overall " + (STATE.opts.auto !== false ? "on" : "off");
+}
+
+function renderAll(){
+  renderTable();
+  renderTraffic();
+  renderBar();
+  renderStatus();
+}
+
+function refreshPlots(){
+  renderTraffic();
+  renderBar();
+  renderStatus();
+}
+
+/* ---------- evidence modal ---------- */
+function openEvidence(rowIdx, itemIdx){
+  var row = STATE.rows[rowIdx];
+  if (!row) return;
+  var ov = rowOverall(row);
+  var ovInfo = OVERALL[ov] || {label:"", colour:"#d3d3d3"};
+  var item = row.items[itemIdx];
+  var code = row.codes[itemIdx] || "u";
+  var resp = RESP[code] || RESP.u;
+  var html = "";
+  html += "<div class=\"ev-head\"><h4>" + esc(rowLabel(row)) + "</h4>" +
+    "<span class=\"resp-badge\" style=\"background:" + resp.colour + "\">" + esc(resp.label) + "</span>" +
+    "<span class=\"ov-pill\" style=\"background:" + ovInfo.colour + "\">Overall: " + esc(ovInfo.label || "—") + "</span>" +
+    "<button class=\"btn\" data-study-detail=\"" + rowIdx + "\">Study detail &amp; rationale</button></div>";
+  html += "<div class=\"ev-question\">" + esc(ITEMS[itemIdx].code + " — " + ITEMS[itemIdx].name) + "</div>";
+  html += "<div class=\"ev-label\">Evidence location</div><div class=\"ev-text\">" + esc(item.evidence_location || "—") + "</div>";
+  html += "<div class=\"ev-label\">Exact quote (verified against source PDF)</div><div class=\"ev-quote\">" + esc(item.exact_quote || "No direct supporting statement identified.") + "</div>";
+  html += "<div class=\"ev-label\">Reviewer rationale</div><div class=\"ev-text\">" + esc(item.reviewer_rationale || "—") + "</div>";
+  $("evidenceBody").innerHTML = html;
+  $("evidence").classList.add("visible");
+}
+
+function openStudyDetail(rowIdx){
+  var row = STATE.rows[rowIdx];
+  if (!row) return;
+  var ov = rowOverall(row);
+  var ovInfo = OVERALL[ov] || {label:"", colour:"#d3d3d3"};
+  var st = row.stage1 || {};
+  var ovl = row.overall || {};
+  var html = "";
+  html += "<div class=\"ev-head\"><h4>" + esc(rowLabel(row)) + "</h4>" +
+    "<span class=\"ov-pill\" style=\"background:" + ovInfo.colour + "\">Overall: " + esc(ovInfo.label || "—") + "</span></div>";
+
+  html += "<div class=\"ev-label\">Design (as appraised)</div><div class=\"ev-text\">" + esc(st.design_actual || st.design_as_reported || "—") + "</div>";
+  var rows1 = [
+    ["n participants", st.n_participants],
+    ["n centres", st.n_centers],
+    ["Prospective / retrospective", st.prospective_retrospective],
+    ["Recruitment", st.recruitment],
+    ["Report type judgment", st.report_type_judgment],
+    ["Tool eligibility", st.tool_eligibility_note]
+  ];
+  html += "<div class=\"ev-label\">Stage 1 — design verification</div><ul class=\"ev-list\">";
+  for (var i=0;i<rows1.length;i++){
+    if (rows1[i][1]) html += "<li><strong>" + esc(rows1[i][0]) + ":</strong> " + esc(rows1[i][1]) + "</li>";
+  }
+  html += "</ul>";
+
+  html += "<div class=\"ev-label\">Overall rationale</div><div class=\"ev-text\">" + esc(ovl.domain_rationale || "—") + "</div>";
+  if (ovl.strengths && ovl.strengths.length){
+    html += "<div class=\"ev-label\">Principal strengths</div><ul class=\"ev-list\">";
+    for (var s=0;s<ovl.strengths.length;s++) html += "<li>" + esc(ovl.strengths[s]) + "</li>";
+    html += "</ul>";
+  }
+  if (ovl.limitations && ovl.limitations.length){
+    html += "<div class=\"ev-label\">Principal concerns</div><ul class=\"ev-list\">";
+    for (var l=0;l<ovl.limitations.length;l++) html += "<li>" + esc(ovl.limitations[l]) + "</li>";
+    html += "</ul>";
+  }
+  if (ovl.missing_information && ovl.missing_information.length){
+    html += "<div class=\"ev-label\">Missing information</div><ul class=\"ev-list\">";
+    for (var m=0;m<ovl.missing_information.length;m++) html += "<li>" + esc(ovl.missing_information[m]) + "</li>";
+    html += "</ul>";
+  }
+  if (ovl.reviewer_override && ovl.reviewer_override !== "none"){
+    html += "<div class=\"ev-label\">Reviewer override</div><div class=\"ev-text\">" + esc(ovl.reviewer_override + (ovl.override_justification ? " — " + ovl.override_justification : "")) + "</div>";
+  }
+  $("evidenceBody").innerHTML = html;
+  $("evidence").classList.add("visible");
+}
+
+function closeModal(id){
+  $(id).classList.remove("visible");
+}
+
+/* ---------- import wizard ---------- */
+var pendingImport = null;
+
+function openWizard(result, title){
+  pendingImport = result;
+  var issues = $("wizIssues");
+  var html = "";
+  if (result.warns && result.warns.length){
+    html += "<div class=\"ev-label\">Import notes</div><ul class=\"ev-list wiz-issue\">";
+    for (var i=0;i<result.warns.length;i++) html += "<li>" + esc(result.warns[i]) + "</li>";
+    html += "</ul>";
+  } else {
+    html += "<div class=\"ev-text\">No issues detected.</div>";
+  }
+  issues.innerHTML = html;
+
+  var rows = result.rows;
+  var tbl = "<table id=\"wizPrev\"><thead><tr><th>Study</th>";
+  for (var j=0;j<ITEMS.length;j++) tbl += "<th>" + ITEMS[j].code + "</th>";
+  tbl += "<th>Overall</th></tr></thead><tbody>";
+  var maxPrev = Math.min(rows.length, 30);
+  for (var r=0;r<maxPrev;r++){
+    var row = rows[r];
+    tbl += "<tr><td>" + esc(row.study) + "</td>";
+    for (var q=0;q<ITEMS.length;q++) tbl += "<td>" + esc(responseLabel(row.codes[q])) + "</td>";
+    var oc = rowOverall(row);
+    tbl += "<td>" + esc(OVERALL[oc] ? OVERALL[oc].label : "") + "</td></tr>";
+  }
+  if (rows.length > maxPrev) tbl += "<tr><td colspan=\"" + (ITEMS.length + 2) + "\">… " + (rows.length - maxPrev) + " more</td></tr>";
+  tbl += "</tbody></table>";
+  $("wizPrev").innerHTML = tbl;
+  $("wizard").classList.add("visible");
+}
+
+function applyImport(){
+  if (!pendingImport) return;
+  if (!pendingImport.rows.length){
+    toast("Nothing to import — fix the warnings shown in the preview.", "err");
+    return;
+  }
+  STATE.rows = pendingImport.rows;
+  selectedRows = {};
+  pendingImport = null;
+  closeModal("wizard");
+  pushHistory();
+  renderAll();
+  save();
+  toast("Imported " + STATE.rows.length + " stud" + (STATE.rows.length === 1 ? "y" : "ies") + ".", "ok");
+}
+
+/* ---------- export ---------- */
+function figureName(prefix){
+  return prefix + "_" + safeName(TOOL_NAME) + "_" + STATE.rows.length + "studies";
+}
+
+function svgToString(svgHtml, presetInches){
+  var wrap = document.createElement("div");
+  wrap.innerHTML = svgHtml;
+  var el = wrap.firstChild;
+  el.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  el.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+  var w = parseFloat(el.getAttribute("width")), h = parseFloat(el.getAttribute("height"));
+  if (presetInches && w && h){
+    var tw = presetInches * 96;
+    el.setAttribute("viewBox", "0 0 " + w + " " + h);
+    el.setAttribute("width", Math.round(tw));
+    el.setAttribute("height", Math.round(tw * h / w));
+  }
+  return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + new XMLSerializer().serializeToString(el);
+}
+
+function exportSVG(id, name){
+  var host = $(id);
+  var svgEl = host.querySelector("svg");
+  if (!svgEl) return;
+  var inches = Number(STATE.ui.journal) || 0;
+  downloadFile(name + ".svg", new Blob([svgToString(svgEl.outerHTML, inches || null)], {type: "image/svg+xml;charset=utf-8"}));
+}
+
+function pngCrc32(bytes){
+  var crc = 0xffffffff;
+  for (var i=0;i<bytes.length;i++){
+    crc ^= bytes[i];
+    for (var j=0;j<8;j++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data){
+  var typeBytes = new Uint8Array(4);
+  for (var i=0;i<4;i++) typeBytes[i] = type.charCodeAt(i);
+  var crcInput = new Uint8Array(4 + data.length);
+  crcInput.set(typeBytes, 0);
+  crcInput.set(data, 4);
+  var chunk = new Uint8Array(12 + data.length);
+  var view = new DataView(chunk.buffer);
+  view.setUint32(0, data.length);
+  chunk.set(typeBytes, 4);
+  chunk.set(data, 8);
+  view.setUint32(8 + data.length, pngCrc32(crcInput));
+  return chunk;
+}
+
+function addPngDpi(blob, dpi, done){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var bytes = new Uint8Array(reader.result);
+      if (bytes.length < 33 || bytes[0] !== 137 || bytes[1] !== 80 || bytes[2] !== 78 || bytes[3] !== 71){ done(blob); return; }
+      var view = new DataView(bytes.buffer), pos = 8, insertAt = -1;
+      while (pos + 12 <= bytes.length){
+        var length = view.getUint32(pos);
+        var type = String.fromCharCode(bytes[pos+4], bytes[pos+5], bytes[pos+6], bytes[pos+7]);
+        if (type === "IHDR"){ insertAt = pos + 12 + length; break; }
+        pos += 12 + length;
+      }
+      if (insertAt < 0){ done(blob); return; }
+      var ppm = Math.max(1, Math.round(Number(dpi) / 0.0254));
+      var data = new Uint8Array(9), dataView = new DataView(data.buffer);
+      dataView.setUint32(0, ppm);
+      dataView.setUint32(4, ppm);
+      data[8] = 1;
+      var chunk = pngChunk("pHYs", data);
+      var out = new Uint8Array(bytes.length + chunk.length);
+      out.set(bytes.slice(0, insertAt), 0);
+      out.set(chunk, insertAt);
+      out.set(bytes.slice(insertAt), insertAt + chunk.length);
+      done(new Blob([out], {type:"image/png"}));
+    }catch(e){ done(blob); }
+  };
+  reader.onerror = function(){ done(blob); };
+  reader.readAsArrayBuffer(blob);
+}
+
+function exportPNG(id, name, dpi){
+  var host = $(id);
+  var svgEl = host.querySelector("svg");
+  if (!svgEl) return;
+  var w = parseFloat(svgEl.getAttribute("width")), h = parseFloat(svgEl.getAttribute("height"));
+  if (!w || !h) return;
+  var inches = Number(STATE.ui.journal) || 0;
+  var outW = inches ? Math.round(inches * dpi) : Math.round(w * dpi / 96);
+  var outH = Math.round(outW * h / w);
+  var img = new Image();
+  var url = URL.createObjectURL(new Blob([svgToString(svgEl.outerHTML, null)], {type: "image/svg+xml;charset=utf-8"}));
+  img.onload = function(){
+    var canvas = document.createElement("canvas");
+    canvas.width = outW;
+    canvas.height = outH;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(function(blob){
+      URL.revokeObjectURL(url);
+      if (!blob) return;
+      addPngDpi(blob, dpi, function(finalBlob){ downloadFile(name + "_" + dpi + "dpi.png", finalBlob); });
+    }, "image/png");
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); toast("Could not render PNG in this browser.", "err"); };
+  img.src = url;
+}
+
+function copyPng(id, dpi){
+  var host = $(id);
+  var svgEl = host.querySelector("svg");
+  if (!svgEl) return;
+  var w = parseFloat(svgEl.getAttribute("width")), h = parseFloat(svgEl.getAttribute("height"));
+  if (!w || !h) return;
+  var outW = Math.round(w * dpi / 96), outH = Math.round(outW * h / w);
+  var img = new Image();
+  var url = URL.createObjectURL(new Blob([svgToString(svgEl.outerHTML, null)], {type: "image/svg+xml;charset=utf-8"}));
+  img.onload = function(){
+    var canvas = document.createElement("canvas");
+    canvas.width = outW; canvas.height = outH;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(function(blob){
+      if (!blob){ toast("Could not copy figure.", "err"); return; }
+      var item = new ClipboardItem({"image/png": blob});
+      navigator.clipboard.write([item]).then(function(){
+        toast("Figure copied to clipboard — paste into Word or PowerPoint.", "ok");
+      }).catch(function(){
+        toast("Clipboard write failed in this browser; use PNG download instead.", "err");
+      });
+    }, "image/png");
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); toast("Could not render PNG in this browser.", "err"); };
+  img.src = url;
+}
+
+/* ---------- projects ---------- */
+function renderProjectList(){
+  var sel = $("projectList");
+  var names = Object.keys(projects).sort();
+  sel.innerHTML = "<option value=\"\">— choose project —</option>";
+  for (var i=0;i<names.length;i++){
+    var opt = document.createElement("option");
+    opt.value = names[i];
+    opt.textContent = names[i];
+    sel.appendChild(opt);
+  }
+}
+
+function currentTabFigureId(){
+  return STATE.ui.tab === "bar" ? "figBar" : "figTf";
+}
+
+/* ---------- file handling ---------- */
+function readFileAsText(file, done){
+  var reader = new FileReader();
+  reader.onload = function(){ done(String(reader.result || "")); };
+  reader.onerror = function(){ toast("Could not read file.", "err"); };
+  reader.readAsText(file);
+}
+
+function looksLikeJson(text){
+  var t = text.replace(/^\uFEFF/, "").trim();
+  return t.charAt(0) === "{" || t.charAt(0) === "[";
+}
+
+function importFromText(text, sourceLabel){
+  try{
+    if (looksLikeJson(text)){
+      var obj = JSON.parse(text);
+      openWizard(parseJsonData(obj), "JSON");
+      toast("JSON parsed — previewing " + (obj && obj.studies ? Object.keys(obj.studies).length : (Array.isArray(obj) ? obj.length : 0)) + " studies.", "ok");
+    } else {
+      openWizard(parseCsvData(text), "CSV");
+      toast("CSV parsed — review the preview.", "ok");
+    }
+  }catch(e){
+    toast("Could not parse " + sourceLabel + ": " + e.message, "err");
+  }
+}
+
+/* ================================================================ *
+ *  INIT AND EVENT WIRING                                           *
+ * ================================================================ */
+function wireDom(){
+  /* panes / tabs */
+  var navBtns = document.querySelectorAll(".pane-nav button");
+  for (var i=0;i<navBtns.length;i++){
+    navBtns[i].addEventListener("click", function(){ setPane(this.getAttribute("data-pane")); });
+  }
+  var tabBtns = document.querySelectorAll(".tabs button");
+  for (var j=0;j<tabBtns.length;j++){
+    tabBtns[j].addEventListener("click", function(){ setTab(this.getAttribute("data-tab")); renderAll(); save(); });
+  }
+
+  /* import */
+  $("btnImport").addEventListener("click", function(){
+    var text = $("paste").value;
+    if (!text.trim()){ toast("Paste CSV or JSON text first.", "warn"); return; }
+    importFromText(text, "pasted text");
+  });
+  $("btnExample").addEventListener("click", function(){
+    if (!EMBEDDED || !EMBEDDED.studies){
+      toast("Embedded 7-study dataset not built — run tools/build_dataset.mjs.", "warn");
+      return;
+    }
+    STATE.rows = buildFromNative(EMBEDDED.studies);
+    selectedRows = {};
+    pendingImport = null;
+    pushHistory();
+    renderAll();
+    save();
+    toast("Reloaded the 7 bundled single-arm appraisals.", "ok");
+  });
+  $("btnFile").addEventListener("click", function(){ $("file").click(); });
+  $("file").addEventListener("change", function(){
+    if (!this.files || !this.files[0]) return;
+    var f = this.files[0];
+    readFileAsText(f, function(text){ importFromText(text, f.name); });
+    this.value = "";
+  });
+
+  /* wizard modal */
+  $("wizard").querySelector(".apply").addEventListener("click", applyImport);
+  $("wizard").querySelector(".cancel").addEventListener("click", function(){ closeModal("wizard"); pendingImport = null; });
+  $("wizard").querySelector(".close").addEventListener("click", function(){ closeModal("wizard"); pendingImport = null; });
+
+  /* evidence modal */
+  $("evidence").querySelectorAll(".close").forEach(function(b){
+    b.addEventListener("click", function(){ closeModal("evidence"); });
+  });
+
+  /* traffic light clicks */
+  $("figTf").addEventListener("click", function(ev){
+    var target = ev.target;
+    var node = target.closest ? target.closest("[data-evidence]") : null;
+    if (node){
+      var parts = node.getAttribute("data-evidence").split(":");
+      openEvidence(parseInt(parts[0], 10), parseInt(parts[1], 10));
+      return;
+    }
+    var detail = target.closest ? target.closest("[data-study-detail]") : null;
+    if (detail){
+      openStudyDetail(parseInt(detail.getAttribute("data-study-detail"), 10));
+      return;
+    }
+    var ex = target.closest ? target.closest("[data-example]") : null;
+    if (ex){ $("btnExample").click(); return; }
+    var fi = target.closest ? target.closest("[data-focus-import]") : null;
+    if (fi){ setPane("import"); $("paste").focus(); return; }
+  });
+
+  /* data table events */
+  $("grid").addEventListener("change", function(ev){
+    var t = ev.target;
+    var tr = t.closest("tr");
+    if (!tr) return;
+    var idx = parseInt(tr.getAttribute("data-idx"), 10);
+    if (isNaN(idx) || !STATE.rows[idx]) return;
+    if (t.classList.contains("f-item")){
+      STATE.rows[idx].codes[parseInt(t.getAttribute("data-item"), 10)] = t.value;
+      refreshRow(idx);
+    } else if (t.classList.contains("f-weight")){
+      var w = parseFloat(t.value);
+      STATE.rows[idx].weight = isFinite(w) && w >= 0 ? w : 1;
+    } else if (t.classList.contains("sel")){
+      selectedRows[idx] = t.checked;
+      renderBulkbar();
+      return;
+    } else if (t.id === "selAll"){
+      var boxes = document.querySelectorAll("#grid .sel");
+      for (var b=0;b<boxes.length;b++){
+        var bi = parseInt(boxes[b].getAttribute("data-idx"), 10);
+        selectedRows[bi] = t.checked;
+        boxes[b].checked = t.checked;
+      }
+      renderBulkbar();
+      return;
+    }
+    renderAll();
+    save();
+  });
+  $("grid").addEventListener("input", function(ev){
+    var t = ev.target;
+    if (!t.classList) return;
+    var tr = t.closest("tr");
+    if (!tr) return;
+    var idx = parseInt(tr.getAttribute("data-idx"), 10);
+    if (isNaN(idx) || !STATE.rows[idx]) return;
+    if (t.classList.contains("f-study")) STATE.rows[idx].study = t.value;
+    else if (t.classList.contains("f-n")) STATE.rows[idx].n = t.value;
+    else if (t.classList.contains("f-notes")) STATE.rows[idx].notes = t.value;
+    scheduleRender();
+  });
+  $("grid").addEventListener("click", function(ev){
+    var t = ev.target;
+    if (!t.classList) return;
+    if (t.classList.contains("del")){
+      var idx = parseInt(t.getAttribute("data-del"), 10);
+      if (!isNaN(idx) && STATE.rows[idx]){
+        pushHistory();
+        STATE.rows.splice(idx, 1);
+        delete selectedRows[idx];
+        renderAll();
+        save();
+      }
+      return;
+    }
+    if (t.classList.contains("act")){
+      var mode = t.hasAttribute("data-view") ? "view" : (t.hasAttribute("data-dupe") ? "dupe" : "");
+      var i2 = parseInt(t.getAttribute(mode === "view" ? "data-view" : "data-dupe"), 10);
+      if (isNaN(i2) || !STATE.rows[i2]) return;
+      if (mode === "view"){
+        openStudyDetail(i2);
+      } else {
+        pushHistory();
+        var copy = JSON.parse(JSON.stringify(STATE.rows[i2]));
+        copy.study = copy.study + " (copy)";
+        STATE.rows.splice(i2 + 1, 0, copy);
+        renderAll();
+        save();
+      }
+      return;
+    }
+  });
+
+  /* bulk bar */
+  var bulkItem = $("bulkItem");
+  bulkItem.innerHTML = "";
+  for (var bi=0;bi<ITEMS.length;bi++){
+    var opt = document.createElement("option");
+    opt.value = bi;
+    opt.textContent = ITEMS[bi].code;
+    bulkItem.appendChild(opt);
+  }
+  $("btnBulkSet").addEventListener("click", function(){
+    var item = parseInt(bulkItem.value, 10);
+    var value = $("bulkValue").value;
+    pushHistory();
+    for (var k in selectedRows){
+      if (selectedRows[k] && STATE.rows[parseInt(k, 10)]) STATE.rows[parseInt(k, 10)].codes[item] = value;
+    }
+    renderAll();
+    save();
+  });
+  $("btnBulkDel").addEventListener("click", function(){
+    pushHistory();
+    var idxs = [];
+    for (var k2 in selectedRows) if (selectedRows[k2]) idxs.push(parseInt(k2, 10));
+    idxs.sort(function(a,b){ return b - a; });
+    for (var d=0;d<idxs.length;d++) STATE.rows.splice(idxs[d], 1);
+    selectedRows = {};
+    renderAll();
+    save();
+  });
+  $("btnBulkClear").addEventListener("click", function(){
+    selectedRows = {};
+    renderAll();
+  });
+
+  /* data options */
+  $("optAuto").addEventListener("change", function(){
+    STATE.opts.auto = this.checked;
+    renderAll(); save();
+  });
+  $("optComp").addEventListener("change", function(){
+    STATE.opts.comp = this.checked;
+    renderAll(); save();
+  });
+  $("optWeighted").addEventListener("change", function(){
+    STATE.opts.weighted = this.checked;
+    refreshPlots(); save();
+  });
+  $("sortBy").addEventListener("change", function(){
+    STATE.ui.sortBy = this.value;
+    renderAll(); save();
+  });
+  $("query").addEventListener("input", function(){
+    STATE.ui.query = this.value;
+    renderAll();
+  });
+
+  /* title / notes */
+  $("uiTitle").addEventListener("input", function(){ STATE.ui.title = this.value; refreshPlots(); save(); });
+  $("uiSubtitle").addEventListener("input", function(){ STATE.ui.subtitle = this.value; refreshPlots(); save(); });
+  $("uiFootnote").addEventListener("input", function(){ STATE.ui.footnote = this.value; refreshPlots(); save(); });
+
+  /* figure options */
+  $("fontSel").addEventListener("change", function(){
+    STATE.ui.font = parseFloat(this.value) || 1;
+    refreshPlots(); save();
+  });
+  $("fontFamily").addEventListener("change", function(){
+    STATE.ui.fontFamily = this.value;
+    refreshPlots(); save();
+  });
+  $("journalSel").addEventListener("change", function(){
+    STATE.ui.journal = this.value;
+    refreshPlots(); save();
+  });
+  $("domainLabels").addEventListener("change", function(){
+    STATE.ui.domainLabels = this.value;
+    refreshPlots(); save();
+  });
+  $("optLegend").addEventListener("change", function(){
+    STATE.ui.legend = this.checked;
+    refreshPlots(); save();
+  });
+  $("optCaption").addEventListener("change", function(){
+    STATE.ui.caption = this.checked;
+    refreshPlots(); save();
+  });
+  $("optBarPct").addEventListener("change", function(){
+    STATE.ui.barPct = this.checked;
+    refreshPlots(); save();
+  });
+  $("psize").addEventListener("change", function(){
+    STATE.ui.psize = parseFloat(this.value) || 10;
+    refreshPlots(); save();
+  });
+
+  /* figure toolbar buttons */
+  function figNameFor(prefix){
+    return prefix + "_JBI_Case_Series_" + displayRows().length + "studies";
+  }
+  $("btnTfPng").addEventListener("click", function(){ exportPNG("figTf", figNameFor("traffic"), 300); });
+  $("btnTfSvg").addEventListener("click", function(){ exportSVG("figTf", figNameFor("traffic")); });
+  $("btnTfCopy").addEventListener("click", function(){ copyPng("figTf", 300); });
+  $("btnBarPng").addEventListener("click", function(){ exportPNG("figBar", figNameFor("bar"), 300); });
+  $("btnBarSvg").addEventListener("click", function(){ exportSVG("figBar", figNameFor("bar")); });
+  $("btnBarCopy").addEventListener("click", function(){ copyPng("figBar", 300); });
+
+  /* export pane */
+  $("btnPng300").addEventListener("click", function(){ exportPNG(currentTabFigureId(), figNameFor("figure"), 300); });
+  $("btnPng600").addEventListener("click", function(){ exportPNG(currentTabFigureId(), figNameFor("figure"), 600); });
+  $("btnSvg").addEventListener("click", function(){ exportSVG(currentTabFigureId(), figNameFor("figure")); });
+  $("btnCopyPng").addEventListener("click", function(){ copyPng(currentTabFigureId(), 300); });
+  $("btnCsv").addEventListener("click", function(){
+    downloadFile("JBI_Case_Series_data.csv", new Blob([csvOfRows(displayRows())], {type: "text/csv;charset=utf-8"}));
+  });
+  $("btnJson").addEventListener("click", function(){
+    var stamp = new Date().toISOString().slice(0,10).replace(/-/g,"");
+    downloadFile("JBI_Case_Series_" + stamp + ".json", new Blob([JSON.stringify(toNative(), null, 2)], {type: "application/json"}));
+  });
+  $("btnPackage").addEventListener("click", function(){
+    var stamp = new Date().toISOString().slice(0,10).replace(/-/g,"");
+    var pkg = {
+      app: APP_NAME, version: APP_VERSION, exported: new Date().toISOString(),
+      tool: TOOL_NAME, caption: figureCaption(displayRows()),
+      studies: toNative().studies,
+      ui: Object.assign({}, STATE.ui), opts: Object.assign({}, STATE.opts)
+    };
+    downloadFile("JBI_Case_Series_package_" + stamp + ".json", new Blob([JSON.stringify(pkg, null, 2)], {type: "application/json"}));
+  });
+  $("btnCaption").addEventListener("click", function(){ copyText(figureCaption(displayRows())); });
+  $("btnPrint").addEventListener("click", function(){ window.print(); });
+
+  /* projects */
+  $("btnSaveProject").addEventListener("click", function(){
+    var name = prompt("Project name:", "JBI appraisal " + new Date().toISOString().slice(0,10));
+    if (!name) return;
+    projects[name] = { saved: new Date().toISOString(), rows: STATE.rows, opts: STATE.opts, ui: STATE.ui };
+    saveProjects();
+    renderProjectList();
+    toast("Project \"" + name + "\" saved locally.", "ok");
+  });
+  $("btnLoadProject").addEventListener("click", function(){
+    var name = $("projectList").value;
+    if (!name || !projects[name]){ toast("Choose a project to load.", "warn"); return; }
+    STATE.rows = normalizeStoredRows(projects[name].rows || []);
+    if (projects[name].opts) Object.assign(STATE.opts, projects[name].opts);
+    if (projects[name].ui) Object.assign(STATE.ui, projects[name].ui);
+    selectedRows = {};
+    pushHistory();
+    renderAll();
+    save();
+    toast("Project \"" + name + "\" loaded.", "ok");
+  });
+  $("btnDelProject").addEventListener("click", function(){
+    var name = $("projectList").value;
+    if (!name || !projects[name]){ toast("Choose a project to delete.", "warn"); return; }
+    delete projects[name];
+    saveProjects();
+    renderProjectList();
+    toast("Project \"" + name + "\" deleted.", "ok");
+  });
+
+  /* keyboard shortcuts */
+  document.addEventListener("keydown", function(ev){
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    var k = ev.key.toLowerCase();
+    if (k === "z"){ ev.preventDefault(); undo(); }
+    else if (k === "y"){ ev.preventDefault(); redo(); }
+  });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape"){ closeModal("wizard"); closeModal("evidence"); }
+  });
+
+  /* drag & drop */
+  var dropOverlay = $("dropOverlay");
+  var dragDepth = 0;
+  window.addEventListener("dragenter", function(ev){
+    ev.preventDefault();
+    dragDepth++;
+    dropOverlay.classList.add("visible");
+  });
+  window.addEventListener("dragover", function(ev){ ev.preventDefault(); });
+  window.addEventListener("dragleave", function(ev){
+    ev.preventDefault();
+    dragDepth--;
+    if (dragDepth <= 0){ dragDepth = 0; dropOverlay.classList.remove("visible"); }
+  });
+  window.addEventListener("drop", function(ev){
+    ev.preventDefault();
+    dragDepth = 0;
+    dropOverlay.classList.remove("visible");
+    var files = ev.dataTransfer && ev.dataTransfer.files;
+    if (!files || !files.length){ toast("Drop a CSV or JSON file.", "warn"); return; }
+    var f = files[0];
+    readFileAsText(f, function(text){ importFromText(text, f.name); });
+  });
+
+  /* apply saved UI to widgets */
+  function setVal(id, value){
+    var el = $(id);
+    if (el) el.value = value;
+  }
+  setVal("optAuto", STATE.opts.auto ? "on" : "off");
+  $("optAuto").checked = STATE.opts.auto;
+  $("optComp").checked = STATE.opts.comp;
+  $("optWeighted").checked = STATE.opts.weighted;
+  setVal("sortBy", STATE.ui.sortBy);
+  setVal("query", STATE.ui.query);
+  setVal("uiTitle", STATE.ui.title);
+  setVal("uiSubtitle", STATE.ui.subtitle);
+  setVal("uiFootnote", STATE.ui.footnote);
+  setVal("fontSel", String(STATE.ui.font));
+  setVal("fontFamily", STATE.ui.fontFamily);
+  setVal("journalSel", String(STATE.ui.journal));
+  setVal("domainLabels", STATE.ui.domainLabels);
+  $("optLegend").checked = STATE.ui.legend;
+  $("optCaption").checked = STATE.ui.caption;
+  $("optBarPct").checked = STATE.ui.barPct;
+  setVal("psize", String(STATE.ui.psize));
+
+  loadProjects();
+  renderProjectList();
+  renderAll();
+}
+
+/* debounce the heavy re-render while typing in the grid */
+var renderTimer = null;
+function scheduleRender(){
+  if (renderTimer) clearTimeout(renderTimer);
+  renderTimer = setTimeout(function(){
+    renderTimer = null;
+    renderTable();
+    refreshPlots();
+    save();
+  }, 400);
+}
+
+/* light refresh of one table row after an item change */
+function refreshRow(idx){
+  renderTable();
+  refreshPlots();
+  save();
+}
+
+function init(){
+  var restored = load();
+  if (!restored){
+    if (EMBEDDED && EMBEDDED.studies && Object.keys(EMBEDDED.studies).length){
+      STATE.rows = buildFromNative(EMBEDDED.studies);
+    }
+  }
+  pushHistory();
+  wireDom();
+  setTab(STATE.ui.tab || "tf");
+}
+
+if (document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
